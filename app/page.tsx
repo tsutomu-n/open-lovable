@@ -2,10 +2,10 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { appConfig } from '@/config/app.config';
 import { toast } from "sonner";
+import { useAiModels } from "@/hooks/use-ai-models";
 
 // Import shared components
 import { Connector } from "@/components/shared/layout/curvy-rect";
@@ -40,7 +40,7 @@ interface SearchResult {
 export default function HomePage() {
   const [url, setUrl] = useState<string>("");
   const [selectedStyle, setSelectedStyle] = useState<string>("1");
-  const [selectedModel, setSelectedModel] = useState<string>(appConfig.ai.defaultModel);
+  const [selectedModel, setSelectedModel] = useState<string>("");
   const [isValidUrl, setIsValidUrl] = useState<boolean>(false);
   const [showSearchTiles, setShowSearchTiles] = useState<boolean>(false);
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
@@ -52,6 +52,13 @@ export default function HomePage() {
   const [additionalInstructions, setAdditionalInstructions] = useState<string>('');
   const [extendBrandStyles, setExtendBrandStyles] = useState<boolean>(false);
   const router = useRouter();
+  const {
+    enabledModels,
+    loading: aiModelsLoading,
+    error: aiModelsError,
+    hasAvailableModels,
+    normalizeModel,
+  } = useAiModels();
   
   // Simple URL validation
   const validateUrl = (urlString: string) => {
@@ -78,16 +85,24 @@ export default function HomePage() {
     { id: "8", name: "Retro Wave", description: "80s inspired" },
   ];
 
-  const models = appConfig.ai.availableModels.map(model => ({
-    id: model,
-    name: appConfig.ai.modelDisplayNames[model] || model,
-  }));
+  useEffect(() => {
+    if (aiModelsLoading) {
+      return;
+    }
+
+    setSelectedModel(currentModel => normalizeModel(currentModel) || '');
+  }, [aiModelsLoading, normalizeModel]);
 
   const handleSubmit = async (selectedResult?: SearchResult) => {
     const inputValue = url.trim();
 
     if (!inputValue) {
       toast.error("Please enter a URL or search term");
+      return;
+    }
+
+    if (!selectedModel) {
+      toast.error("AI model is not configured. Set AI_GATEWAY_API_KEY or one provider API key.");
       return;
     }
 
@@ -529,14 +544,26 @@ export default function HomePage() {
                         <select
                           value={selectedModel}
                           onChange={(e) => setSelectedModel(e.target.value)}
+                          disabled={aiModelsLoading || !hasAvailableModels}
                           className={`px-3 py-2.5 text-xs font-medium text-gray-700 bg-white rounded border border-gray-200 focus:border-orange-500 focus:outline-none focus:ring-1 focus:ring-orange-500 ${extendBrandStyles ? 'flex-1' : ''}`}
                         >
-                          {models.map((model) => (
+                          {!hasAvailableModels && (
+                            <option value="">
+                              {aiModelsLoading ? 'Loading AI models...' : 'No AI models available'}
+                            </option>
+                          )}
+                          {enabledModels.map((model) => (
                             <option key={model.id} value={model.id}>
-                              {model.name}
+                              {model.label}
                             </option>
                           ))}
                         </select>
+
+                        {(aiModelsError || !hasAvailableModels) && (
+                          <p className="text-[11px] text-gray-500 mt-2">
+                            {aiModelsError || 'Set AI_GATEWAY_API_KEY or one provider API key to enable generation.'}
+                          </p>
+                        )}
 
                         {/* Additional Instructions - Hidden when extend brand styles is enabled */}
                         {!extendBrandStyles && (

@@ -733,7 +733,7 @@ body {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               missingImports,
-              model: 'claude-sonnet-4-20250514'
+              model: 'anthropic/claude-4-sonnet'
             })
           }
         );

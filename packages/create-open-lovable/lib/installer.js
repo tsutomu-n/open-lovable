@@ -162,7 +162,13 @@ async function createEnvFile(projectPath, sandbox, answers) {
   }
   
   // Optional AI provider keys
-  envContent += `# OPTIONAL - AI Providers\n`;
+  envContent += `# OPTIONAL - AI model access\n`;
+  
+  if (answers.aiGatewayApiKey) {
+    envContent += `AI_GATEWAY_API_KEY=${answers.aiGatewayApiKey}\n`;
+  } else {
+    envContent += `# AI_GATEWAY_API_KEY=your_ai_gateway_api_key_here\n`;
+  }
   
   if (answers.anthropicApiKey) {
     envContent += `ANTHROPIC_API_KEY=${answers.anthropicApiKey}\n`;
@@ -215,7 +221,9 @@ async function createEnvExample(projectPath, sandbox) {
     envContent += `VERCEL_TOKEN=your_access_token\n\n`;
   }
   
-  envContent += `# OPTIONAL - AI Providers (need at least one)\n`;
+  envContent += `# OPTIONAL - AI model access (configure AI Gateway or at least one provider)\n`;
+  envContent += `# Get yours at https://vercel.com/docs/ai-gateway\n`;
+  envContent += `AI_GATEWAY_API_KEY=your_ai_gateway_api_key_here\n\n`;
   envContent += `# Get yours at https://console.anthropic.com\n`;
   envContent += `ANTHROPIC_API_KEY=your_anthropic_api_key_here\n\n`;
   envContent += `# Get yours at https://platform.openai.com\n`;

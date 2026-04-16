@@ -1,41 +1,43 @@
-import { appConfig } from '@/config/app.config';
+import type { LanguageModel } from 'ai';
 import { createGroq } from '@ai-sdk/groq';
 import { createAnthropic } from '@ai-sdk/anthropic';
 import { createOpenAI } from '@ai-sdk/openai';
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
+import { createGateway, type GatewayProvider } from '@ai-sdk/gateway';
+import { resolveRuntimeModel } from './model-runtime';
 
 type ProviderName = 'openai' | 'anthropic' | 'groq' | 'google';
 
-// Client function type returned by @ai-sdk providers
-export type ProviderClient =
+type LocalProviderClient =
   | ReturnType<typeof createOpenAI>
   | ReturnType<typeof createAnthropic>
   | ReturnType<typeof createGroq>
   | ReturnType<typeof createGoogleGenerativeAI>;
 
-export interface ProviderResolution {
-  client: ProviderClient;
+export interface ModelResolution {
+  model: LanguageModel;
+  canonicalModel: string;
   actualModel: string;
+  provider: ProviderName | 'gateway';
+  viaGateway: boolean;
+  label?: string;
 }
 
 const aiGatewayApiKey = process.env.AI_GATEWAY_API_KEY;
-const aiGatewayBaseURL = 'https://ai-gateway.vercel.sh/v1';
-const isUsingAIGateway = !!aiGatewayApiKey;
 
-// Cache provider clients by a stable key to avoid recreating
-const clientCache = new Map<string, ProviderClient>();
+// Cache provider clients by a stable key to avoid recreating them.
+const clientCache = new Map<string, LocalProviderClient>();
+let gatewayClient: GatewayProvider | null = null;
 
 function getEnvDefaults(provider: ProviderName): { apiKey?: string; baseURL?: string } {
-  if (isUsingAIGateway) {
-    return { apiKey: aiGatewayApiKey, baseURL: aiGatewayBaseURL };
-  }
-
   switch (provider) {
     case 'openai':
       return { apiKey: process.env.OPENAI_API_KEY, baseURL: process.env.OPENAI_BASE_URL };
     case 'anthropic':
-      // Default Anthropic base URL mirrors existing routes
-      return { apiKey: process.env.ANTHROPIC_API_KEY, baseURL: process.env.ANTHROPIC_BASE_URL || 'https://api.anthropic.com/v1' };
+      return {
+        apiKey: process.env.ANTHROPIC_API_KEY,
+        baseURL: process.env.ANTHROPIC_BASE_URL || 'https://api.anthropic.com/v1',
+      };
     case 'groq':
       return { apiKey: process.env.GROQ_API_KEY, baseURL: process.env.GROQ_BASE_URL };
     case 'google':
@@ -45,78 +47,85 @@ function getEnvDefaults(provider: ProviderName): { apiKey?: string; baseURL?: st
   }
 }
 
-function getOrCreateClient(provider: ProviderName, apiKey?: string, baseURL?: string): ProviderClient {
-  const effective = isUsingAIGateway
-    ? { apiKey: aiGatewayApiKey, baseURL: aiGatewayBaseURL }
-    : { apiKey, baseURL };
+function getGatewayClient(): GatewayProvider {
+  if (!gatewayClient) {
+    gatewayClient = createGateway({ apiKey: aiGatewayApiKey });
+  }
+
+  return gatewayClient;
+}
+
+function getOrCreateClient(
+  provider: ProviderName,
+  apiKey?: string,
+  baseURL?: string
+): LocalProviderClient {
+  const defaults = getEnvDefaults(provider);
+  const effective = {
+    apiKey: apiKey || defaults.apiKey,
+    baseURL: baseURL ?? defaults.baseURL,
+  };
 
   const cacheKey = `${provider}:${effective.apiKey || ''}:${effective.baseURL || ''}`;
   const cached = clientCache.get(cacheKey);
-  if (cached) return cached;
+  if (cached) {
+    return cached;
+  }
 
-  let client: ProviderClient;
+  let client: LocalProviderClient;
   switch (provider) {
     case 'openai':
-      client = createOpenAI({ apiKey: effective.apiKey || getEnvDefaults('openai').apiKey, baseURL: effective.baseURL ?? getEnvDefaults('openai').baseURL });
+      client = createOpenAI(effective);
       break;
     case 'anthropic':
-      client = createAnthropic({ apiKey: effective.apiKey || getEnvDefaults('anthropic').apiKey, baseURL: effective.baseURL ?? getEnvDefaults('anthropic').baseURL });
+      client = createAnthropic(effective);
       break;
     case 'groq':
-      client = createGroq({ apiKey: effective.apiKey || getEnvDefaults('groq').apiKey, baseURL: effective.baseURL ?? getEnvDefaults('groq').baseURL });
+      client = createGroq(effective);
       break;
     case 'google':
-      client = createGoogleGenerativeAI({ apiKey: effective.apiKey || getEnvDefaults('google').apiKey, baseURL: effective.baseURL ?? getEnvDefaults('google').baseURL });
+      client = createGoogleGenerativeAI(effective);
       break;
     default:
-      client = createGroq({ apiKey: effective.apiKey || getEnvDefaults('groq').apiKey, baseURL: effective.baseURL ?? getEnvDefaults('groq').baseURL });
+      client = createGroq(effective);
   }
 
   clientCache.set(cacheKey, client);
   return client;
 }
 
-export function getProviderForModel(modelId: string): ProviderResolution {
-  // 1) Check explicit model configuration in app config (custom models)
-  const configured = appConfig.ai.modelApiConfig?.[modelId as keyof typeof appConfig.ai.modelApiConfig];
-  if (configured) {
-    const { provider, apiKey, baseURL, model } = configured as { provider: ProviderName; apiKey?: string; baseURL?: string; model: string };
-    const client = getOrCreateClient(provider, apiKey, baseURL);
-    return { client, actualModel: model };
+export function resolveLanguageModel(modelId: string): ModelResolution {
+  const runtimeModel = resolveRuntimeModel(modelId);
+
+  if (!runtimeModel.enabled || !runtimeModel.canonicalModel || !runtimeModel.actualModel || !runtimeModel.provider) {
+    throw new Error(runtimeModel.disabledReason || 'Unknown AI model');
   }
 
-  // 2) Fallback logic based on prefixes and special cases
-  const isAnthropic = modelId.startsWith('anthropic/');
-  const isOpenAI = modelId.startsWith('openai/');
-  const isGoogle = modelId.startsWith('google/');
-  const isKimiGroq = modelId === 'moonshotai/kimi-k2-instruct-0905';
-
-  if (isKimiGroq) {
-    const client = getOrCreateClient('groq');
-    return { client, actualModel: 'moonshotai/kimi-k2-instruct-0905' };
+  if (runtimeModel.viaGateway) {
+    return {
+      model: getGatewayClient()(runtimeModel.actualModel),
+      canonicalModel: runtimeModel.canonicalModel,
+      actualModel: runtimeModel.actualModel,
+      provider: 'gateway',
+      viaGateway: true,
+      label: runtimeModel.label,
+    };
   }
 
-  if (isAnthropic) {
-    const client = getOrCreateClient('anthropic');
-    return { client, actualModel: modelId.replace('anthropic/', '') };
+  const provider = runtimeModel.provider;
+  if (provider === 'gateway') {
+    throw new Error('Gateway model should have been handled earlier');
   }
 
-  if (isOpenAI) {
-    const client = getOrCreateClient('openai');
-    return { client, actualModel: modelId.replace('openai/', '') };
-  }
-
-  if (isGoogle) {
-    const client = getOrCreateClient('google');
-    return { client, actualModel: modelId.replace('google/', '') };
-  }
-
-  // Default: use Groq with modelId as-is
-  const client = getOrCreateClient('groq');
-  return { client, actualModel: modelId };
+  const client = getOrCreateClient(provider);
+  return {
+    model: client(runtimeModel.actualModel),
+    canonicalModel: runtimeModel.canonicalModel,
+    actualModel: runtimeModel.actualModel,
+    provider,
+    viaGateway: false,
+    label: runtimeModel.label,
+  };
 }
 
-export default getProviderForModel;
-
-
-
+export default resolveLanguageModel;

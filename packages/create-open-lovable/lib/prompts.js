@@ -151,11 +151,19 @@ export function getEnvPrompts(provider) {
     message: 'Select AI providers to configure:',
     when: (answers) => answers.addAiKeys,
     choices: [
+      { name: 'Vercel AI Gateway', value: 'gateway' },
       { name: 'Anthropic (Claude)', value: 'anthropic' },
       { name: 'OpenAI (GPT)', value: 'openai' },
       { name: 'Google (Gemini)', value: 'gemini' },
       { name: 'Groq', value: 'groq' }
     ]
+  });
+
+  prompts.push({
+    type: 'input',
+    name: 'aiGatewayApiKey',
+    message: 'Vercel AI Gateway API key:',
+    when: (answers) => answers.aiProviders && answers.aiProviders.includes('gateway')
   });
 
   prompts.push({

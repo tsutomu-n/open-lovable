@@ -22,12 +22,16 @@ pnpm install  # or npm install / yarn install
 FIRECRAWL_API_KEY=your_firecrawl_api_key    # https://firecrawl.dev
 
 # =================================================================
-# AI PROVIDER - Choose your LLM
+# AI MODEL ACCESS - Choose ONE approach
 # =================================================================
-GEMINI_API_KEY=your_gemini_api_key        # https://aistudio.google.com/app/apikey
-ANTHROPIC_API_KEY=your_anthropic_api_key  # https://console.anthropic.com
-OPENAI_API_KEY=your_openai_api_key        # https://platform.openai.com
-GROQ_API_KEY=your_groq_api_key            # https://console.groq.com
+# Option A: Vercel AI Gateway (recommended)
+AI_GATEWAY_API_KEY=your_ai_gateway_api_key  # https://vercel.com/docs/ai-gateway
+
+# Option B: Direct provider keys
+GEMINI_API_KEY=your_gemini_api_key          # https://aistudio.google.com/app/apikey
+ANTHROPIC_API_KEY=your_anthropic_api_key    # https://console.anthropic.com
+OPENAI_API_KEY=your_openai_api_key          # https://platform.openai.com
+GROQ_API_KEY=your_groq_api_key              # https://console.groq.com
 
 # =================================================================
 # FAST APPLY (Optional - for faster edits)
@@ -61,6 +65,13 @@ pnpm dev  # or npm run dev / yarn dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000)
+
+## AI Models
+
+- The app uses a curated model catalog and only shows models that are usable in the current environment.
+- Recommended default model: `google/gemini-2.5-pro`
+- Gateway mode enables the curated catalog through `AI_GATEWAY_API_KEY`.
+- Direct mode enables only the providers whose API keys are configured.
 
 ## License
 

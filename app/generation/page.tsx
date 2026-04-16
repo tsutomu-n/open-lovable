@@ -10,6 +10,7 @@ import HeaderBrandKit from '@/components/shared/header/BrandKit/BrandKit';
 import { HeaderProvider } from '@/components/shared/header/HeaderContext';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import { useAiModels } from '@/hooks/use-ai-models';
 // Import icons from centralized module to avoid Turbopack chunk issues
 import { 
   FiFile, 
@@ -78,10 +79,7 @@ function AISandboxPage() {
   const [aiEnabled] = useState(true);
   const searchParams = useSearchParams();
   const router = useRouter();
-  const [aiModel, setAiModel] = useState(() => {
-    const modelParam = searchParams.get('model');
-    return appConfig.ai.availableModels.includes(modelParam || '') ? modelParam! : appConfig.ai.defaultModel;
-  });
+  const [aiModel, setAiModel] = useState(() => searchParams.get('model') || '');
   const [urlOverlayVisible, setUrlOverlayVisible] = useState(false);
   const [urlInput, setUrlInput] = useState('');
   const [urlStatus, setUrlStatus] = useState<string[]>([]);
@@ -130,6 +128,14 @@ function AISandboxPage() {
   const [codeApplicationState, setCodeApplicationState] = useState<CodeApplicationState>({
     stage: null
   });
+  const {
+    enabledModels,
+    loading: aiModelsLoading,
+    error: aiModelsError,
+    hasAvailableModels,
+    normalizeModel,
+    catalog,
+  } = useAiModels();
   
   const [generationProgress, setGenerationProgress] = useState<{
     isGenerating: boolean;
@@ -159,6 +165,47 @@ function AISandboxPage() {
 
   // Store flag to trigger generation after component mounts
   const [shouldAutoGenerate, setShouldAutoGenerate] = useState(false);
+
+  useEffect(() => {
+    if (aiModelsLoading) {
+      return;
+    }
+
+    setAiModel(currentModel => {
+      const normalizedModel = normalizeModel(searchParams.get('model') || currentModel);
+      return normalizedModel || '';
+    });
+  }, [aiModelsLoading, normalizeModel, searchParams]);
+
+  useEffect(() => {
+    if (aiModelsLoading) {
+      return;
+    }
+
+    const nextModel = aiModel || '';
+    const currentQueryModel = searchParams.get('model') || '';
+    if (nextModel === currentQueryModel) {
+      return;
+    }
+
+    const params = new URLSearchParams(searchParams.toString());
+    if (nextModel) {
+      params.set('model', nextModel);
+    } else {
+      params.delete('model');
+    }
+
+    const queryString = params.toString();
+    router.replace(queryString ? `/generation?${queryString}` : '/generation', { scroll: false });
+  }, [aiModel, aiModelsLoading, router, searchParams]);
+
+  useEffect(() => {
+    if (aiModel) {
+      sessionStorage.setItem('selectedModel', aiModel);
+    } else {
+      sessionStorage.removeItem('selectedModel');
+    }
+  }, [aiModel]);
 
   // Clear old conversation data on component mount and create/restore sandbox
   useEffect(() => {
@@ -398,6 +445,40 @@ function AISandboxPage() {
       return [...prev, { content, type, timestamp: new Date(), metadata }];
     });
   };
+
+  const getEffectiveAiModel = () => {
+    if (aiModel) {
+      return aiModel;
+    }
+
+    const fallbackModel = catalog.defaultModel || normalizeModel(null);
+    if (fallbackModel) {
+      setAiModel(fallbackModel);
+      return fallbackModel;
+    }
+
+    const errorMessage = aiModelsError || 'No AI model available. Set AI_GATEWAY_API_KEY or one provider API key.';
+    addChatMessage(errorMessage, 'system');
+    return null;
+  };
+
+  const ensureApiResponseOk = async (response: Response, fallbackMessage: string) => {
+    if (response.ok && response.body) {
+      return;
+    }
+
+    let message = fallbackMessage;
+    try {
+      const errorData = await response.json();
+      if (errorData?.message) {
+        message = errorData.message;
+      }
+    } catch {
+      // Ignore JSON parsing failures and keep the fallback message.
+    }
+
+    throw new Error(message);
+  };
   
   const checkAndInstallPackages = async () => {
     // This function is only called when user explicitly requests it
@@ -438,7 +519,12 @@ function AISandboxPage() {
         throw new Error(`Failed to install packages: ${response.statusText}`);
       }
       
-      const reader = response.body?.getReader();
+      const responseBody = response.body;
+      if (!responseBody) {
+        throw new Error('Missing response body');
+      }
+
+      const reader = responseBody.getReader();
       const decoder = new TextDecoder();
       
       while (reader) {
@@ -566,7 +652,11 @@ function AISandboxPage() {
         // Update URL with sandbox ID
         const newParams = new URLSearchParams(searchParams.toString());
         newParams.set('sandbox', data.sandboxId);
-        newParams.set('model', aiModel);
+        if (aiModel) {
+          newParams.set('model', aiModel);
+        } else {
+          newParams.delete('model');
+        }
         router.push(`/generation?${newParams.toString()}`, { scroll: false });
         
         // Fade out loading background after sandbox loads
@@ -1795,20 +1885,23 @@ Tip: I automatically detect and install npm packages from your code imports (lik
       console.log('[chat] - sandboxId:', fullContext.sandboxId);
       console.log('[chat] - isEdit:', conversationContext.appliedCode.length > 0);
       
+      const effectiveModel = getEffectiveAiModel();
+      if (!effectiveModel) {
+        return;
+      }
+
       const response = await fetch('/api/generate-ai-code-stream', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           prompt: message,
-          model: aiModel,
+          model: effectiveModel,
           context: fullContext,
           isEdit: conversationContext.appliedCode.length > 0
         })
       });
       
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
+      await ensureApiResponseOk(response, `HTTP error! status: ${response.status}`);
       
       const reader = response.body?.getReader();
       const decoder = new TextDecoder();
@@ -3014,12 +3107,17 @@ Focus on the key sections and content, making it clean and modern.`;
           lastProcessedPosition: 0
         }));
         
+        const effectiveModel = getEffectiveAiModel();
+        if (!effectiveModel) {
+          return;
+        }
+
         const aiResponse = await fetch('/api/generate-ai-code-stream', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ 
             prompt,
-            model: aiModel,
+            model: effectiveModel,
             context: {
               sandboxId: sandboxData?.sandboxId,
               structure: structureContent,
@@ -3028,11 +3126,14 @@ Focus on the key sections and content, making it clean and modern.`;
           })
         });
         
-        if (!aiResponse.ok || !aiResponse.body) {
-          throw new Error('Failed to generate code');
-        }
+        await ensureApiResponseOk(aiResponse, 'Failed to generate code');
         
-        const reader = aiResponse.body.getReader();
+        const aiResponseBody = aiResponse.body;
+        if (!aiResponseBody) {
+          throw new Error('Missing response body');
+        }
+
+        const reader = aiResponseBody.getReader();
         const decoder = new TextDecoder();
         let generatedCode = '';
         let explanation = '';
@@ -3287,24 +3388,26 @@ Focus on the key sections and content, making it clean and modern.`;
           {/* Model Selector - Left side */}
           <select
             value={aiModel}
-            onChange={(e) => {
-              const newModel = e.target.value;
-              setAiModel(newModel);
-              const params = new URLSearchParams(searchParams);
-              params.set('model', newModel);
-              if (sandboxData?.sandboxId) {
-                params.set('sandbox', sandboxData.sandboxId);
-              }
-              router.push(`/generation?${params.toString()}`);
-            }}
+            onChange={(e) => setAiModel(e.target.value)}
+            disabled={aiModelsLoading || !hasAvailableModels}
             className="px-3 py-1.5 text-sm text-gray-900 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:border-gray-300 transition-colors"
           >
-            {appConfig.ai.availableModels.map(model => (
-              <option key={model} value={model}>
-                {appConfig.ai.modelDisplayNames?.[model] || model}
+            {!hasAvailableModels && (
+              <option value="">
+                {aiModelsLoading ? 'Loading AI models...' : 'No AI models available'}
+              </option>
+            )}
+            {enabledModels.map(model => (
+              <option key={model.id} value={model.id}>
+                {model.label}
               </option>
             ))}
           </select>
+          {(aiModelsError || !hasAvailableModels) && (
+            <span className="text-xs text-gray-500 max-w-[280px]">
+              {aiModelsError || 'Set AI_GATEWAY_API_KEY or one provider API key to enable generation.'}
+            </span>
+          )}
           <button 
             onClick={() => createSandbox()}
             className="p-8 rounded-lg transition-colors bg-gray-50 border border-gray-200 text-gray-700 hover:bg-gray-100"
@@ -3348,6 +3451,7 @@ Focus on the key sections and content, making it clean and modern.`;
                 onSubmit={(url, style, model, instructions) => {
                   // Mark that we've had an initial submission
                   setHasInitialSubmission(true);
+                  setAiModel(model);
                   
                   // Store the configuration in sessionStorage (same as home page)
                   sessionStorage.setItem('targetUrl', url);

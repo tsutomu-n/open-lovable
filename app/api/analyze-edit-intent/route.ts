@@ -1,35 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createGroq } from '@ai-sdk/groq';
-import { createAnthropic } from '@ai-sdk/anthropic';
-import { createOpenAI } from '@ai-sdk/openai';
-import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { generateObject } from 'ai';
 import { z } from 'zod';
+import { getAiModelCatalog, resolveRuntimeModel } from '@/lib/ai/model-runtime';
+import { resolveLanguageModel } from '@/lib/ai/provider-manager';
 // import type { FileManifest } from '@/types/file-manifest'; // Type is used implicitly through manifest parameter
-
-// Check if we're using Vercel AI Gateway
-const isUsingAIGateway = !!process.env.AI_GATEWAY_API_KEY;
-const aiGatewayBaseURL = 'https://ai-gateway.vercel.sh/v1';
-
-const groq = createGroq({
-  apiKey: process.env.AI_GATEWAY_API_KEY ?? process.env.GROQ_API_KEY,
-  baseURL: isUsingAIGateway ? aiGatewayBaseURL : undefined,
-});
-
-const anthropic = createAnthropic({
-  apiKey: process.env.AI_GATEWAY_API_KEY ?? process.env.ANTHROPIC_API_KEY,
-  baseURL: isUsingAIGateway ? aiGatewayBaseURL : (process.env.ANTHROPIC_BASE_URL || 'https://api.anthropic.com/v1'),
-});
-
-const openai = createOpenAI({
-  apiKey: process.env.AI_GATEWAY_API_KEY ?? process.env.OPENAI_API_KEY,
-  baseURL: isUsingAIGateway ? aiGatewayBaseURL : process.env.OPENAI_BASE_URL,
-});
-
-const googleGenerativeAI = createGoogleGenerativeAI({
-  apiKey: process.env.AI_GATEWAY_API_KEY ?? process.env.GEMINI_API_KEY,
-  baseURL: isUsingAIGateway ? aiGatewayBaseURL : undefined,
-});
 
 // Schema for the AI's search plan - not file selection!
 const searchPlanSchema = z.object({
@@ -61,11 +35,24 @@ const searchPlanSchema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
-    const { prompt, manifest, model = 'openai/gpt-oss-20b' } = await request.json();
+    const body = await request.json();
+    const catalog = getAiModelCatalog();
+    const requestedModel = body.model || catalog.defaultModel;
+    const runtimeModel = resolveRuntimeModel(requestedModel);
+    const { prompt, manifest } = body;
+
+    if (!requestedModel) {
+      return NextResponse.json({
+        success: false,
+        errorCode: 'AI_MODEL_UNAVAILABLE',
+        message: 'No available AI model configured',
+        fallbackModel: catalog.defaultModel,
+      }, { status: 400 });
+    }
     
     console.log('[analyze-edit-intent] Request received');
     console.log('[analyze-edit-intent] Prompt:', prompt);
-    console.log('[analyze-edit-intent] Model:', model);
+    console.log('[analyze-edit-intent] Model:', requestedModel);
     console.log('[analyze-edit-intent] Manifest files count:', manifest?.files ? Object.keys(manifest.files).length : 0);
     
     if (!prompt || !manifest) {
@@ -102,29 +89,28 @@ export async function POST(request: NextRequest) {
     
     console.log('[analyze-edit-intent] Analyzing prompt:', prompt);
     console.log('[analyze-edit-intent] File summary preview:', fileSummary.split('\n').slice(0, 5).join('\n'));
-    
-    // Select the appropriate AI model based on the request
-    let aiModel;
-    if (model.startsWith('anthropic/')) {
-      aiModel = anthropic(model.replace('anthropic/', ''));
-    } else if (model.startsWith('openai/')) {
-      if (model.includes('gpt-oss')) {
-        aiModel = groq(model);
-      } else {
-        aiModel = openai(model.replace('openai/', ''));
-      }
-    } else if (model.startsWith('google/')) {
-      aiModel = googleGenerativeAI(model.replace('google/', ''));
-    } else {
-      // Default to groq if model format is unclear
-      aiModel = groq(model);
+
+    if (!runtimeModel.enabled || !runtimeModel.canonicalModel) {
+      return NextResponse.json({
+        success: false,
+        errorCode: 'AI_MODEL_UNAVAILABLE',
+        message: runtimeModel.disabledReason || 'No available AI model configured',
+        fallbackModel: catalog.defaultModel,
+      }, { status: 400 });
     }
     
-    console.log('[analyze-edit-intent] Using AI model:', model);
+    const resolvedModel = resolveLanguageModel(runtimeModel.canonicalModel);
+    
+    console.log('[analyze-edit-intent] Using AI model:', {
+      requested: requestedModel,
+      canonical: resolvedModel.canonicalModel,
+      resolved: resolvedModel.actualModel,
+      provider: resolvedModel.viaGateway ? 'gateway' : resolvedModel.provider
+    });
     
     // Use AI to create a search plan
     const result = await generateObject({
-      model: aiModel,
+      model: resolvedModel.model,
       schema: searchPlanSchema,
       messages: [
         {

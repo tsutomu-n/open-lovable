@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { appConfig } from "@/config/app.config";
+import { useAiModels } from "@/hooks/use-ai-models";
 
 interface SidebarInputProps {
   onSubmit: (url: string, style: string, model: string, instructions?: string) => void;
@@ -12,9 +12,16 @@ interface SidebarInputProps {
 export default function SidebarInput({ onSubmit, disabled = false }: SidebarInputProps) {
   const [url, setUrl] = useState<string>("");
   const [selectedStyle, setSelectedStyle] = useState<string>("1");
-  const [selectedModel, setSelectedModel] = useState<string>(appConfig.ai.defaultModel);
+  const [selectedModel, setSelectedModel] = useState<string>("");
   const [additionalInstructions, setAdditionalInstructions] = useState<string>("");
   const [isValidUrl, setIsValidUrl] = useState<boolean>(false);
+  const {
+    enabledModels,
+    loading: aiModelsLoading,
+    error: aiModelsError,
+    hasAvailableModels,
+    normalizeModel,
+  } = useAiModels();
 
   // Simple URL validation - currently unused but keeping for future use
   // const validateUrl = (urlString: string) => {
@@ -34,14 +41,17 @@ export default function SidebarInput({ onSubmit, disabled = false }: SidebarInpu
     { id: "8", name: "Retro Wave", description: "80s inspired" },
   ];
 
-  const models = appConfig.ai.availableModels.map(model => ({
-    id: model,
-    name: appConfig.ai.modelDisplayNames[model] || model,
-  }));
+  useEffect(() => {
+    if (aiModelsLoading) {
+      return;
+    }
+
+    setSelectedModel(currentModel => normalizeModel(currentModel) || '');
+  }, [aiModelsLoading, normalizeModel]);
 
   const handleSubmit = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    if (!url.trim() || disabled) return;
+    if (!url.trim() || disabled || !selectedModel) return;
 
     onSubmit(url.trim(), selectedStyle, selectedModel, additionalInstructions || undefined);
 
@@ -96,15 +106,25 @@ export default function SidebarInput({ onSubmit, disabled = false }: SidebarInpu
               <select
                 value={selectedModel}
                 onChange={(e) => setSelectedModel(e.target.value)}
-                disabled={disabled}
+                disabled={disabled || aiModelsLoading || !hasAvailableModels}
                 className="w-full px-3 py-2 text-xs font-medium text-gray-700 bg-white rounded border border-gray-200 focus:border-orange-500 focus:outline-none focus:ring-1 focus:ring-orange-500"
               >
-                {models.map((model) => (
+                {!hasAvailableModels && (
+                  <option value="">
+                    {aiModelsLoading ? 'Loading AI models...' : 'No AI models available'}
+                  </option>
+                )}
+                {enabledModels.map((model) => (
                   <option key={model.id} value={model.id}>
-                    {model.name}
+                    {model.label}
                   </option>
                 ))}
               </select>
+              {(aiModelsError || !hasAvailableModels) && (
+                <p className="mt-2 text-[11px] text-gray-500">
+                  {aiModelsError || 'Set AI_GATEWAY_API_KEY or one provider API key to enable generation.'}
+                </p>
+              )}
             </div>
 
             {/* Additional Instructions */}
@@ -124,10 +144,10 @@ export default function SidebarInput({ onSubmit, disabled = false }: SidebarInpu
             <div className="pt-2">
               <button
                 onClick={handleSubmit}
-                disabled={!isValidUrl || disabled}
+                disabled={!isValidUrl || disabled || !selectedModel}
                 className={`
                   w-full py-2.5 px-4 rounded-lg text-sm font-medium transition-all
-                  ${isValidUrl && !disabled
+                  ${isValidUrl && !disabled && !!selectedModel
                     ? 'bg-orange-500 hover:bg-orange-600 text-white'
                     : 'bg-gray-200 text-gray-400 cursor-not-allowed'
                   }
