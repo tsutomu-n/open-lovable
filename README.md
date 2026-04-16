@@ -15,6 +15,16 @@ pnpm install  # or npm install / yarn install
 
 2. **Add `.env.local`**
 
+Fastest path for local website cloning:
+- `SANDBOX_PROVIDER=e2b`
+- `E2B_API_KEY`
+- `FIRECRAWL_API_KEY`
+- `GEMINI_API_KEY`
+
+If `SANDBOX_PROVIDER` is omitted, the app now auto-selects the first available sandbox provider:
+1. `e2b` when `E2B_API_KEY` is present
+2. `vercel` when Vercel sandbox credentials are present
+
 ```env
 # =================================================================
 # REQUIRED
@@ -39,11 +49,14 @@ GROQ_API_KEY=your_groq_api_key              # https://console.groq.com
 MORPH_API_KEY=your_morphllm_api_key    # https://morphllm.com/dashboard
 
 # =================================================================
-# SANDBOX PROVIDER - Choose ONE: Vercel (default) or E2B
+# SANDBOX PROVIDER - Choose ONE: E2B (recommended for local) or Vercel
 # =================================================================
-SANDBOX_PROVIDER=vercel  # or 'e2b'
+SANDBOX_PROVIDER=e2b  # or 'vercel'
 
-# Option 1: Vercel Sandbox (default)
+# Option 1: E2B Sandbox (recommended for local)
+E2B_API_KEY=your_e2b_api_key              # https://e2b.dev
+
+# Option 2: Vercel Sandbox
 # Choose one authentication method:
 
 # Method A: OIDC Token (recommended for development)
@@ -55,8 +68,6 @@ VERCEL_OIDC_TOKEN=auto_generated_by_vercel_env_pull
 # VERCEL_PROJECT_ID=prj_xxxxxxxxx    # Your Vercel project ID
 # VERCEL_TOKEN=vercel_xxxxxxxxxxxx   # Personal access token from Vercel dashboard
 
-# Option 2: E2B Sandbox
-# E2B_API_KEY=your_e2b_api_key      # https://e2b.dev
 ```
 
 3. **Run**
@@ -66,12 +77,38 @@ pnpm dev  # or npm run dev / yarn dev
 
 Open [http://localhost:3000](http://localhost:3000)
 
+4. **Clone a website**
+```text
+1. Open /
+2. Enter the target website URL
+3. Confirm the AI model shows "Gemini 2.5 Pro"
+4. Click "Scrape Site"
+5. Wait for sandbox creation, scrape, and code generation
+```
+
 ## AI Models
 
 - The app uses a curated model catalog and only shows models that are usable in the current environment.
 - Recommended default model: `google/gemini-2.5-pro`
 - Gateway mode enables the curated catalog through `AI_GATEWAY_API_KEY`.
 - Direct mode enables only the providers whose API keys are configured.
+
+## Minimum Working Local Config
+
+If the goal is simply "clone an existing website locally", use this:
+
+```env
+FIRECRAWL_API_KEY=your_firecrawl_api_key
+GEMINI_API_KEY=your_gemini_api_key
+E2B_API_KEY=your_e2b_api_key
+SANDBOX_PROVIDER=e2b
+```
+
+Expected behavior:
+- `GET /api/ai-models` returns `defaultModel: "google/gemini-2.5-pro"`
+- the home page shows `Gemini 2.5 Pro`
+- entering a URL transitions to `/generation`
+- sandbox creation, scraping, and generation all start without extra setup
 
 ## License
 

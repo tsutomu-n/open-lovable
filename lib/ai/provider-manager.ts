@@ -23,8 +23,6 @@ export interface ModelResolution {
   label?: string;
 }
 
-const aiGatewayApiKey = process.env.AI_GATEWAY_API_KEY;
-
 // Cache provider clients by a stable key to avoid recreating them.
 const clientCache = new Map<string, LocalProviderClient>();
 let gatewayClient: GatewayProvider | null = null;
@@ -48,12 +46,13 @@ function getEnvDefaults(provider: ProviderName): { apiKey?: string; baseURL?: st
 }
 
 function getGatewayClient(): GatewayProvider {
-  if (!aiGatewayApiKey) {
+  const apiKey = process.env.AI_GATEWAY_API_KEY;
+  if (!apiKey) {
     throw new Error('AI_GATEWAY_API_KEY is not configured');
   }
 
   if (!gatewayClient) {
-    gatewayClient = createGateway({ apiKey: aiGatewayApiKey });
+    gatewayClient = createGateway({ apiKey });
   }
 
   return gatewayClient;
