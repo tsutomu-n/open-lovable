@@ -48,6 +48,10 @@ function getEnvDefaults(provider: ProviderName): { apiKey?: string; baseURL?: st
 }
 
 function getGatewayClient(): GatewayProvider {
+  if (!aiGatewayApiKey) {
+    throw new Error('AI_GATEWAY_API_KEY is not configured');
+  }
+
   if (!gatewayClient) {
     gatewayClient = createGateway({ apiKey: aiGatewayApiKey });
   }

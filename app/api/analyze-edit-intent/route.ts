@@ -41,15 +41,6 @@ export async function POST(request: NextRequest) {
     const runtimeModel = resolveRuntimeModel(requestedModel);
     const { prompt, manifest } = body;
 
-    if (!requestedModel) {
-      return NextResponse.json({
-        success: false,
-        errorCode: 'AI_MODEL_UNAVAILABLE',
-        message: 'No available AI model configured',
-        fallbackModel: catalog.defaultModel,
-      }, { status: 400 });
-    }
-    
     console.log('[analyze-edit-intent] Request received');
     console.log('[analyze-edit-intent] Prompt:', prompt);
     console.log('[analyze-edit-intent] Model:', requestedModel);
