@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { generateObject } from 'ai';
 import { z } from 'zod';
 import { getAiModelCatalog, resolveRuntimeModel } from '@/lib/ai/model-runtime';
-import { resolveLanguageModel } from '@/lib/ai/provider-manager';
+import { resolveLanguageModel, resolveLanguageModelWithOptions } from '@/lib/ai/provider-manager';
 // import type { FileManifest } from '@/types/file-manifest'; // Type is used implicitly through manifest parameter
 
 // Schema for the AI's search plan - not file selection!
@@ -32,6 +32,14 @@ const searchPlanSchema = z.object({
     patterns: z.array(z.string()).optional()
   }).optional().describe('Backup search if primary fails')
 });
+
+function isGatewayBillingError(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error);
+  return (
+    message.includes('valid credit card on file') ||
+    message.includes('customer_verification_required')
+  );
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -100,13 +108,10 @@ export async function POST(request: NextRequest) {
     });
     
     // Use AI to create a search plan
-    const result = await generateObject({
-      model: resolvedModel.model,
-      schema: searchPlanSchema,
-      messages: [
-        {
-          role: 'system',
-          content: `You are an expert at planning code searches. Your job is to create a search strategy to find the exact code that needs to be edited.
+    const buildMessages = () => ([
+      {
+        role: 'system' as const,
+        content: `You are an expert at planning code searches. Your job is to create a search strategy to find the exact code that needs to be edited.
 
 DO NOT GUESS which files to edit. Instead, provide specific search terms that will locate the code.
 
@@ -134,15 +139,35 @@ SEARCH STRATEGY RULES:
 
 Current project structure for context:
 ${fileSummary}`
-        },
-        {
-          role: 'user',
-          content: `User request: "${prompt}"
+      },
+      {
+        role: 'user' as const,
+        content: `User request: "${prompt}"
 
 Create a search plan to find the exact code that needs to be modified. Include specific search terms and patterns.`
-        }
-      ]
-    });
+      }
+    ]);
+
+    let result;
+    try {
+      result = await generateObject({
+        model: resolvedModel.model,
+        schema: searchPlanSchema,
+        messages: buildMessages()
+      });
+    } catch (error) {
+      if (resolvedModel.viaGateway && isGatewayBillingError(error)) {
+        const directModel = resolveLanguageModelWithOptions(runtimeModel.canonicalModel, { preferDirect: true });
+        console.warn('[analyze-edit-intent] AI Gateway billing restriction detected, retrying with direct provider');
+        result = await generateObject({
+          model: directModel.model,
+          schema: searchPlanSchema,
+          messages: buildMessages()
+        });
+      } else {
+        throw error;
+      }
+    }
     
     console.log('[analyze-edit-intent] Search plan created:', {
       editType: result.object.editType,

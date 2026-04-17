@@ -1,0 +1,22 @@
+[     381ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://127.0.0.1:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1f56dc06._.js:14475
+[     870ms] [WARNING] WebGL: INVALID_OPERATION: uniformMatrix3fv: location is not from the associated program @ :12
+[     870ms] [WARNING] WebGL: INVALID_OPERATION: uniformMatrix3fv: location is not from the associated program @ :16
+[     875ms] [WARNING] WebGL: INVALID_OPERATION: uniformMatrix3fv: location is not from the associated program @ :12
+[     875ms] [WARNING] WebGL: INVALID_OPERATION: uniformMatrix3fv: location is not from the associated program @ :16
+[     877ms] [WARNING] WebGL: INVALID_OPERATION: uniformMatrix3fv: location is not from the associated program @ :12
+[     877ms] [WARNING] WebGL: INVALID_OPERATION: uniformMatrix3fv: location is not from the associated program @ :16
+[   21033ms] [WARNING] Detected `scroll-behavior: smooth` on the `<html>` element. In a future version, Next.js will no longer automatically disable smooth scrolling during route transitions. To prepare for this change, add `data-scroll-behavior="smooth"` to your <html> element. Learn more: https://nextjs.org/docs/messages/missing-data-scroll-behavior @ http://127.0.0.1:3000/_next/static/chunks/node_modules_next_dist_445d8acf._.js:874
+[   21404ms] [LOG] [Fast Refresh] rebuilding @ http://127.0.0.1:3000/_next/static/chunks/node_modules_next_dist_client_20b209c9._.js:5693
+[   21436ms] [LOG] [Fast Refresh] done in 138ms @ http://127.0.0.1:3000/_next/static/chunks/node_modules_next_dist_client_20b209c9._.js:5557
+[   21495ms] [LOG] [home] Cleared old conversation data on mount @ http://127.0.0.1:3000/_next/static/chunks/_ad287314._.js:2228
+[   21532ms] [LOG] [home] Cleared old conversation data on mount @ http://127.0.0.1:3000/_next/static/chunks/_ad287314._.js:2228
+[   21533ms] [LOG] [home] No sandbox in URL, creating new sandbox automatically... @ http://127.0.0.1:3000/_next/static/chunks/_ad287314._.js:2247
+[   21534ms] [LOG] [createSandbox] Starting sandbox creation... @ http://127.0.0.1:3000/_next/static/chunks/_ad287314._.js:2603
+[   22545ms] [LOG] [generation] Auto-starting generation for URL: https://www.python.org @ http://127.0.0.1:3000/_next/static/chunks/_ad287314._.js:2329
+[   22547ms] [LOG] [createSandbox] Sandbox creation already in progress, skipping... @ http://127.0.0.1:3000/_next/static/chunks/_ad287314._.js:2599
+[   44116ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://127.0.0.1:3000/api/scrape-url-enhanced:0
+[   52064ms] [LOG] [createSandbox] Response data: {success: true, sandboxId: sbx_gX1rYuPAlIcxFv1ONTN0vayk9dH5, url: https://sb-5jadl8er4dr7.vercel.run, provider: vercel, message: Sandbox created and Vite React app initialized} @ http://127.0.0.1:3000/_next/static/chunks/_ad287314._.js:2619
+[   52065ms] [LOG] [createSandbox] Setting sandboxData from creation: {success: true, sandboxId: sbx_gX1rYuPAlIcxFv1ONTN0vayk9dH5, url: https://sb-5jadl8er4dr7.vercel.run, provider: vercel, message: Sandbox created and Vite React app initialized} @ http://127.0.0.1:3000/_next/static/chunks/_ad287314._.js:2622
+[   52066ms] [LOG] [createSandbox] Sandbox ready with Vite server running @ http://127.0.0.1:3000/_next/static/chunks/_ad287314._.js:2651
+[   83782ms] [LOG] [Fast Refresh] rebuilding @ http://127.0.0.1:3000/_next/static/chunks/node_modules_next_dist_client_20b209c9._.js:5693
+[   83973ms] [LOG] [Fast Refresh] done in 291ms @ http://127.0.0.1:3000/_next/static/chunks/node_modules_next_dist_client_20b209c9._.js:5557

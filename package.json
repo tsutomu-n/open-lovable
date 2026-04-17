@@ -9,7 +9,7 @@
     "start": "next start",
     "lint": "next lint",
     "test:api": "node --import ./tests/register-ts-hooks.mjs --test tests/api-endpoints.test.js",
-    "test:code": "node --import ./tests/register-ts-hooks.mjs --test tests/code-execution.test.js",
+    "test:code": "node --import ./tests/register-ts-hooks.mjs --test tests/code-execution.test.js tests/scrape-fallback.test.js tests/clone-brief.test.js tests/clone-quality.test.js",
     "test:all": "npm run test:api && npm run test:code"
   },
   "dependencies": {

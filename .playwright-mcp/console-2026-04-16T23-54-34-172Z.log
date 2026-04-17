@@ -1,0 +1,31 @@
+[   10226ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://127.0.0.1:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1f56dc06._.js:14475
+[   10468ms] [LOG] [Fast Refresh] done in NaNms @ http://127.0.0.1:3000/_next/static/chunks/node_modules_next_dist_client_20b209c9._.js:5557
+[   10662ms] [LOG] [Fast Refresh] rebuilding @ http://127.0.0.1:3000/_next/static/chunks/node_modules_next_dist_client_20b209c9._.js:5693
+[   10805ms] [WARNING] WebGL: INVALID_OPERATION: uniformMatrix3fv: location is not from the associated program @ :12
+[   10805ms] [WARNING] WebGL: INVALID_OPERATION: uniformMatrix3fv: location is not from the associated program @ :16
+[   10815ms] [WARNING] WebGL: INVALID_OPERATION: uniformMatrix3fv: location is not from the associated program @ :12
+[   10815ms] [WARNING] WebGL: INVALID_OPERATION: uniformMatrix3fv: location is not from the associated program @ :16
+[   11040ms] [LOG] [Fast Refresh] done in 534ms @ http://127.0.0.1:3000/_next/static/chunks/node_modules_next_dist_client_20b209c9._.js:5557
+[   21359ms] [LOG] [Fast Refresh] rebuilding @ http://127.0.0.1:3000/_next/static/chunks/node_modules_next_dist_client_20b209c9._.js:5693
+[   24281ms] [LOG] [Fast Refresh] done in 3021ms @ http://127.0.0.1:3000/_next/static/chunks/node_modules_next_dist_client_20b209c9._.js:5557
+[   24384ms] [LOG] [Fast Refresh] rebuilding @ http://127.0.0.1:3000/_next/static/chunks/node_modules_next_dist_client_20b209c9._.js:5693
+[   24391ms] [LOG] [Fast Refresh] done in 108ms @ http://127.0.0.1:3000/_next/static/chunks/node_modules_next_dist_client_20b209c9._.js:5557
+[   24538ms] [LOG] [Fast Refresh] rebuilding @ http://127.0.0.1:3000/_next/static/chunks/node_modules_next_dist_client_20b209c9._.js:5693
+[   24672ms] [LOG] [Fast Refresh] done in 234ms @ http://127.0.0.1:3000/_next/static/chunks/node_modules_next_dist_client_20b209c9._.js:5557
+[   24893ms] [WARNING] Detected `scroll-behavior: smooth` on the `<html>` element. In a future version, Next.js will no longer automatically disable smooth scrolling during route transitions. To prepare for this change, add `data-scroll-behavior="smooth"` to your <html> element. Learn more: https://nextjs.org/docs/messages/missing-data-scroll-behavior @ http://127.0.0.1:3000/_next/static/chunks/node_modules_next_dist_445d8acf._.js:874
+[   25252ms] [LOG] [Fast Refresh] rebuilding @ http://127.0.0.1:3000/_next/static/chunks/node_modules_next_dist_client_20b209c9._.js:5693
+[   25702ms] [LOG] [home] Cleared old conversation data on mount @ http://127.0.0.1:3000/_next/static/chunks/_ad287314._.js:2228
+[   25702ms] [LOG] [home] No sandbox in URL, creating new sandbox automatically... @ http://127.0.0.1:3000/_next/static/chunks/_ad287314._.js:2247
+[   25703ms] [LOG] [createSandbox] Starting sandbox creation... @ http://127.0.0.1:3000/_next/static/chunks/_ad287314._.js:2603
+[   25728ms] [LOG] [home] Cleared old conversation data on mount @ http://127.0.0.1:3000/_next/static/chunks/_ad287314._.js:2228
+[   26292ms] [LOG] [generation] Auto-starting generation for URL: https://example.com @ http://127.0.0.1:3000/_next/static/chunks/_ad287314._.js:2329
+[   26295ms] [LOG] [createSandbox] Sandbox creation already in progress, skipping... @ http://127.0.0.1:3000/_next/static/chunks/_ad287314._.js:2599
+[   27570ms] [LOG] [Fast Refresh] done in 2419ms @ http://127.0.0.1:3000/_next/static/chunks/node_modules_next_dist_client_20b209c9._.js:5557
+[   43121ms] [LOG] [Fast Refresh] rebuilding @ http://127.0.0.1:3000/_next/static/chunks/node_modules_next_dist_client_20b209c9._.js:5693
+[   43360ms] [LOG] [Fast Refresh] done in 340ms @ http://127.0.0.1:3000/_next/static/chunks/node_modules_next_dist_client_20b209c9._.js:5557
+[   44889ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://example.com&size=128:0
+[   44898ms] [LOG] [Fast Refresh] rebuilding @ http://127.0.0.1:3000/_next/static/chunks/node_modules_next_dist_client_20b209c9._.js:5693
+[   45760ms] [LOG] [Fast Refresh] done in 962ms @ http://127.0.0.1:3000/_next/static/chunks/node_modules_next_dist_client_20b209c9._.js:5557
+[   53383ms] [LOG] [createSandbox] Response data: {success: true, sandboxId: sbx_kil9ebJc6AjCZIT3hBoLGcwsNZbV, url: https://sb-56ooncsj3ot9.vercel.run, provider: vercel, message: Sandbox created and Vite React app initialized} @ http://127.0.0.1:3000/_next/static/chunks/_ad287314._.js:2619
+[   53383ms] [LOG] [createSandbox] Setting sandboxData from creation: {success: true, sandboxId: sbx_kil9ebJc6AjCZIT3hBoLGcwsNZbV, url: https://sb-56ooncsj3ot9.vercel.run, provider: vercel, message: Sandbox created and Vite React app initialized} @ http://127.0.0.1:3000/_next/static/chunks/_ad287314._.js:2622
+[   53384ms] [LOG] [createSandbox] Sandbox ready with Vite server running @ http://127.0.0.1:3000/_next/static/chunks/_ad287314._.js:2651

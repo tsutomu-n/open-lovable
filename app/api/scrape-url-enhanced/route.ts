@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { buildCloneBrief } from '@/lib/scrape/clone-brief';
+import { assertPublicHttpUrl, parseHtmlForClone } from '@/lib/scrape/fallback';
 
 // Function to sanitize smart quotes and other problematic characters
 function sanitizeQuotes(text: string): string {
@@ -16,6 +18,76 @@ function sanitizeQuotes(text: string): string {
     .replace(/[\u00A0]/g, ' '); // Non-breaking space
 }
 
+async function buildDirectFetchFallbackResponse(targetUrl: string, reason: string) {
+  const fallbackResponse = await fetch(targetUrl, {
+    headers: {
+      'User-Agent': 'OpenLovableFallbackScraper/1.0 (+https://github.com/firecrawl/open-lovable)',
+      'Accept': 'text/html,application/xhtml+xml',
+    },
+    redirect: 'follow',
+    signal: AbortSignal.timeout(15000),
+  });
+
+  if (!fallbackResponse.ok) {
+    throw new Error(`Direct fetch failed with status ${fallbackResponse.status}`);
+  }
+
+  const contentType = fallbackResponse.headers.get('content-type') || '';
+  if (!contentType.includes('text/html')) {
+    throw new Error(`Direct fetch returned unsupported content type: ${contentType}`);
+  }
+
+  const html = await fallbackResponse.text();
+  const parsed = parseHtmlForClone(html);
+  const cloneBrief = buildCloneBrief({
+    url: targetUrl,
+    html,
+    markdown: parsed.content,
+    metadata: {
+      title: parsed.title,
+      description: parsed.description,
+    },
+    screenshot: null,
+    fallbackReason: reason,
+  });
+  const sanitizedContent = sanitizeQuotes(parsed.content);
+  const title = sanitizeQuotes(parsed.title);
+  const description = sanitizeQuotes(parsed.description);
+
+  const formattedContent = `
+Title: ${title}
+Description: ${description}
+URL: ${targetUrl}
+
+Main Content:
+${sanitizedContent}
+  `.trim();
+
+  return NextResponse.json({
+    success: true,
+    url: targetUrl,
+    content: formattedContent,
+    screenshot: null,
+    structured: {
+      ...cloneBrief,
+      title,
+      description,
+      content: sanitizedContent,
+      url: targetUrl,
+      screenshot: null,
+    },
+    metadata: {
+      scraper: 'direct-fetch-fallback',
+      timestamp: new Date().toISOString(),
+      contentLength: formattedContent.length,
+      cached: false,
+      contentType,
+      fallbackReason: reason,
+    },
+    message: 'URL fetched directly without Firecrawl screenshot support',
+  });
+}
+
 export async function POST(request: NextRequest) {
   try {
     const { url } = await request.json();
@@ -27,11 +99,17 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
     
-    console.log('[scrape-url-enhanced] Scraping with Firecrawl:', url);
+    const validatedUrl = await assertPublicHttpUrl(url);
+    const targetUrl = validatedUrl.toString();
+    
+    console.log('[scrape-url-enhanced] Scraping target:', targetUrl);
     
     const FIRECRAWL_API_KEY = process.env.FIRECRAWL_API_KEY;
     if (!FIRECRAWL_API_KEY) {
-      throw new Error('FIRECRAWL_API_KEY environment variable is not set');
+      return buildDirectFetchFallbackResponse(
+        targetUrl,
+        'FIRECRAWL_API_KEY environment variable is not set'
+      );
     }
     
     // Make request to Firecrawl API with maxAge for 500% faster scraping
@@ -42,7 +120,7 @@ export async function POST(request: NextRequest) {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        url,
+        url: targetUrl,
         formats: ['markdown', 'html', 'screenshot'],
         waitFor: 3000,
         timeout: 30000,
@@ -63,17 +141,24 @@ export async function POST(request: NextRequest) {
     
     if (!firecrawlResponse.ok) {
       const error = await firecrawlResponse.text();
-      throw new Error(`Firecrawl API error: ${error}`);
+      console.warn('[scrape-url-enhanced] Firecrawl request failed, falling back to direct fetch:', error);
+      return buildDirectFetchFallbackResponse(
+        targetUrl,
+        `Firecrawl API error: ${error}`
+      );
     }
     
     const data = await firecrawlResponse.json();
     
     if (!data.success || !data.data) {
-      throw new Error('Failed to scrape content');
+      console.warn('[scrape-url-enhanced] Firecrawl returned no scrape data, falling back to direct fetch');
+      return buildDirectFetchFallbackResponse(
+        targetUrl,
+        'Firecrawl returned no scrape data'
+      );
     }
     
-    const { markdown, metadata, screenshot, actions } = data.data;
-    // html available but not used in current implementation
+    const { markdown, metadata, screenshot, actions, html } = data.data;
     
     // Get screenshot from either direct field or actions result
     const screenshotUrl = screenshot || actions?.screenshots?.[0] || null;
@@ -84,12 +169,19 @@ export async function POST(request: NextRequest) {
     // Extract structured data from the response
     const title = metadata?.title || '';
     const description = metadata?.description || '';
+    const cloneBrief = buildCloneBrief({
+      url: targetUrl,
+      markdown: sanitizedMarkdown,
+      html,
+      metadata,
+      screenshot: screenshotUrl,
+    });
     
     // Format content for AI
     const formattedContent = `
 Title: ${sanitizeQuotes(title)}
 Description: ${sanitizeQuotes(description)}
-URL: ${url}
+URL: ${targetUrl}
 
 Main Content:
 ${sanitizedMarkdown}
@@ -97,14 +189,15 @@ ${sanitizedMarkdown}
     
     return NextResponse.json({
       success: true,
-      url,
+      url: targetUrl,
       content: formattedContent,
       screenshot: screenshotUrl,
       structured: {
+        ...cloneBrief,
         title: sanitizeQuotes(title),
         description: sanitizeQuotes(description),
         content: sanitizedMarkdown,
-        url,
+        url: targetUrl,
         screenshot: screenshotUrl
       },
       metadata: {

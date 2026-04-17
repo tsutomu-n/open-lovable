@@ -381,8 +381,12 @@ function AISandboxPage() {
 
   // Auto-start generation if flagged
   useEffect(() => {
+    if (aiModelsLoading) {
+      return;
+    }
+
     const autoStart = sessionStorage.getItem('autoStart');
-    if (autoStart === 'true' && !showHomeScreen && homeUrlInput) {
+    if (autoStart === 'true' && !showHomeScreen && homeUrlInput && (aiModel || catalog.defaultModel)) {
       sessionStorage.removeItem('autoStart');
       // Small delay to ensure everything is ready
       setTimeout(() => {
@@ -390,7 +394,7 @@ function AISandboxPage() {
         startGeneration();
       }, 1000);
     }
-  }, [showHomeScreen, homeUrlInput]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [showHomeScreen, homeUrlInput, aiModelsLoading, aiModel, catalog.defaultModel]); // eslint-disable-line react-hooks/exhaustive-deps
 
 
   useEffect(() => {
@@ -410,7 +414,11 @@ function AISandboxPage() {
 
   // Auto-trigger generation when flag is set (from home page navigation)
   useEffect(() => {
-    if (shouldAutoGenerate && homeUrlInput && !showHomeScreen) {
+    if (aiModelsLoading) {
+      return;
+    }
+
+    if (shouldAutoGenerate && homeUrlInput && !showHomeScreen && (aiModel || catalog.defaultModel)) {
       // Reset the flag
       setShouldAutoGenerate(false);
       
@@ -423,7 +431,7 @@ function AISandboxPage() {
       return () => clearTimeout(timer);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [shouldAutoGenerate, homeUrlInput, showHomeScreen]);
+  }, [shouldAutoGenerate, homeUrlInput, showHomeScreen, aiModelsLoading, aiModel, catalog.defaultModel]);
 
   const updateStatus = (text: string, active: boolean) => {
     setStatus({ text, active });
@@ -447,6 +455,10 @@ function AISandboxPage() {
   };
 
   const getEffectiveAiModel = () => {
+    if (aiModelsLoading) {
+      return null;
+    }
+
     if (aiModel) {
       return aiModel;
     }
@@ -470,11 +482,20 @@ function AISandboxPage() {
     let message = fallbackMessage;
     try {
       const errorData = await response.json();
-      if (errorData?.message) {
+      if (typeof errorData?.message === 'string' && errorData.message.trim()) {
         message = errorData.message;
+      } else if (typeof errorData?.error === 'string' && errorData.error.trim()) {
+        message = errorData.error;
       }
     } catch {
-      // Ignore JSON parsing failures and keep the fallback message.
+      try {
+        const text = await response.text();
+        if (text.trim()) {
+          message = text.trim();
+        }
+      } catch {
+        // Ignore parsing failures and keep the fallback message.
+      }
     }
 
     throw new Error(message);
@@ -636,6 +657,8 @@ function AISandboxPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({})
       });
+
+      await ensureApiResponseOk(response, 'Failed to create sandbox');
       
       const data = await response.json();
       console.log('[createSandbox] Response data:', data);
@@ -2709,7 +2732,10 @@ Tip: I automatically detect and install npm packages from your code imports (lik
           setActiveTab('preview');
         }
       } else {
-        setScreenshotError(data.error || 'Failed to capture screenshot');
+        const errorMessage = data.error || 'Failed to capture screenshot';
+        if (!errorMessage.includes('Firecrawl API key not configured')) {
+          setScreenshotError(errorMessage);
+        }
       }
     } catch (error) {
       console.error('Failed to capture screenshot:', error);
@@ -2817,9 +2843,7 @@ Tip: I automatically detect and install npm packages from your code imports (lik
             })
           });
 
-          if (!extractResponse.ok) {
-            throw new Error('Failed to extract brand styles');
-          }
+          await ensureApiResponseOk(extractResponse, 'Failed to extract brand styles');
 
           brandGuidelines = await extractResponse.json();
 
@@ -2859,10 +2883,8 @@ Tip: I automatically detect and install npm packages from your code imports (lik
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ url })
           });
-          
-          if (!scrapeResponse.ok) {
-            throw new Error('Failed to scrape website');
-          }
+
+          await ensureApiResponseOk(scrapeResponse, 'Failed to scrape website');
           
           scrapeData = await scrapeResponse.json() as ScrapeData;
           
@@ -3066,11 +3088,47 @@ Focus on building something NEW, minimal, and functional that perfectly matches 
               const additionalMatch = homeContextInput.match(/\. (.+)$/);
               filteredContext = additionalMatch ? additionalMatch[1] : '';
             }
+
+            if (filteredContext === 'Glassmorphism style design') {
+              filteredContext = '';
+            }
           }
+
+          const cloneBrief = scrapeData.structured?.siteKind ? scrapeData.structured : null;
+          const rawCloneContent = cloneBrief?.rawContentExcerpt || scrapeData.content;
+          const cloneBriefText = cloneBrief
+            ? [
+                `siteKind: ${cloneBrief.siteKind}`,
+                `pageTitle: ${cloneBrief.pageTitle || cloneBrief.title || ''}`,
+                `description: ${cloneBrief.description || ''}`,
+                cloneBrief.hero
+                  ? `hero: ${cloneBrief.hero.headline || ''} | ${cloneBrief.hero.subheadline || ''} | cta=${cloneBrief.hero.cta ? `${cloneBrief.hero.cta.label} -> ${cloneBrief.hero.cta.url}` : 'none'}`
+                  : '',
+                Array.isArray(cloneBrief.navLinks) && cloneBrief.navLinks.length > 0
+                  ? `navLinks:\n${cloneBrief.navLinks.map((link: any) => `- ${link.label} -> ${link.url}`).join('\n')}`
+                  : 'navLinks: none',
+                Array.isArray(cloneBrief.sections) && cloneBrief.sections.length > 0
+                  ? `sections:\n${cloneBrief.sections.map((section: any, index: number) => `${index + 1}. ${section.title}\n   summary: ${section.summary || 'n/a'}\n   links: ${Array.isArray(section.links) && section.links.length > 0 ? section.links.map((link: any) => `${link.label} -> ${link.url}`).join(' | ') : 'none'}\n   hints: ${Array.isArray(section.contentHints) && section.contentHints.length > 0 ? section.contentHints.join(' | ') : 'none'}`).join('\n')}`
+                  : 'sections: none',
+                Array.isArray(cloneBrief.footerGroups) && cloneBrief.footerGroups.length > 0
+                  ? `footerGroups:\n${cloneBrief.footerGroups.map((group: any) => `${group.title}: ${Array.isArray(group.links) && group.links.length > 0 ? group.links.map((link: any) => `${link.label} -> ${link.url}`).join(' | ') : 'none'}`).join('\n')}`
+                  : 'footerGroups: none',
+                cloneBrief.visualHints
+                  ? `visualHints: density=${cloneBrief.visualHints.density}, layout=${cloneBrief.visualHints.layout}, tone=${cloneBrief.visualHints.tone}, announcement=${cloneBrief.visualHints.prominentAnnouncement}`
+                  : '',
+                cloneBrief.rawContentExcerpt
+                  ? `rawContentExcerpt:\n${cloneBrief.rawContentExcerpt}`
+                  : '',
+              ].filter(Boolean).join('\n\n')
+            : '';
 
           prompt = `I want to recreate the ${url} website as a complete React application based on the scraped content below.
 
-${JSON.stringify(scrapeData, null, 2)}
+${cloneBriefText ? `CLONE BRIEF (SOURCE OF TRUTH):
+${cloneBriefText}
+
+` : ''}RAW SCRAPED CONTENT:
+${rawCloneContent}
 
 ${filteredContext ? `ADDITIONAL CONTEXT/REQUIREMENTS FROM USER:
 ${filteredContext}
@@ -3079,7 +3137,12 @@ Please incorporate these requirements into the design and implementation.` : ''}
 
 IMPORTANT INSTRUCTIONS:
 - Create a COMPLETE, working React application
-- Implement ALL sections and features from the original site
+- Preserve the original site's visible information architecture as closely as possible
+- Preserve the order of major sections, hero content, CTA labels, and footer groupings when available
+- Preserve real source links whenever they are available - do not replace them with "#"
+- If a link is missing from the source, omit it rather than inventing a placeholder
+- For information-dense sites, do not compress the page into only a hero and a few cards
+- For marketing/landing pages, prioritize the hero structure, CTA placement, and visual rhythm
 - Use Tailwind CSS for all styling (no custom CSS files)
 - Make it responsive and modern
 - Ensure all text content matches the original
@@ -3088,7 +3151,7 @@ IMPORTANT INSTRUCTIONS:
 - Create ALL components that you reference in imports
 ${filteredContext ? '- Apply the user\'s context/theme requirements throughout the application' : ''}
 
-Focus on the key sections and content, making it clean and modern.`;
+Focus on visual similarity, section order fidelity, and preserving real content/link structure.`;
         }
 
         setGenerationProgress(prev => ({
@@ -3121,7 +3184,12 @@ Focus on the key sections and content, making it clean and modern.`;
             context: {
               sandboxId: sandboxData?.sandboxId,
               structure: structureContent,
-              conversationContext: conversationContext
+              conversationContext: conversationContext,
+              cloneInput: scrapeData?.structured?.siteKind ? {
+                cloneBrief: scrapeData.structured,
+                screenshotUrl: scrapeData.screenshot || null,
+                sourceUrl: url
+              } : undefined
             }
           })
         });

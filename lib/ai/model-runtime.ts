@@ -39,7 +39,20 @@ function hasEnvValue(env: EnvLike, key: string): boolean {
   return typeof value === 'string' && value.trim().length > 0;
 }
 
+function hasAnyDirectProviderCredential(env: EnvLike): boolean {
+  return [
+    'GEMINI_API_KEY',
+    'OPENAI_API_KEY',
+    'ANTHROPIC_API_KEY',
+    'GROQ_API_KEY',
+  ].some(key => hasEnvValue(env, key));
+}
+
 export function getAiRuntimeMode(env: EnvLike = process.env): AiRuntimeMode {
+  if (hasAnyDirectProviderCredential(env)) {
+    return 'direct';
+  }
+
   return hasEnvValue(env, 'AI_GATEWAY_API_KEY') ? 'gateway' : 'direct';
 }
 

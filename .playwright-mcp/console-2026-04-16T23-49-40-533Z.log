@@ -1,0 +1,37 @@
+[   11390ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://127.0.0.1:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1f56dc06._.js:14475
+[   12172ms] [WARNING] WebGL: INVALID_OPERATION: uniformMatrix3fv: location is not from the associated program @ :12
+[   12172ms] [WARNING] WebGL: INVALID_OPERATION: uniformMatrix3fv: location is not from the associated program @ :16
+[   12575ms] [LOG] [Fast Refresh] done in NaNms @ http://127.0.0.1:3000/_next/static/chunks/node_modules_next_dist_client_20b209c9._.js:5557
+[   46977ms] [LOG] [Fast Refresh] rebuilding @ http://127.0.0.1:3000/_next/static/chunks/node_modules_next_dist_client_20b209c9._.js:5693
+[   50613ms] [LOG] [Fast Refresh] done in 3736ms @ http://127.0.0.1:3000/_next/static/chunks/node_modules_next_dist_client_20b209c9._.js:5557
+[   50742ms] [LOG] [Fast Refresh] rebuilding @ http://127.0.0.1:3000/_next/static/chunks/node_modules_next_dist_client_20b209c9._.js:5693
+[   51311ms] [LOG] [Fast Refresh] done in 689ms @ http://127.0.0.1:3000/_next/static/chunks/node_modules_next_dist_client_20b209c9._.js:5557
+[   51349ms] [WARNING] Detected `scroll-behavior: smooth` on the `<html>` element. In a future version, Next.js will no longer automatically disable smooth scrolling during route transitions. To prepare for this change, add `data-scroll-behavior="smooth"` to your <html> element. Learn more: https://nextjs.org/docs/messages/missing-data-scroll-behavior @ http://127.0.0.1:3000/_next/static/chunks/node_modules_next_dist_445d8acf._.js:874
+[   51648ms] [LOG] [Fast Refresh] rebuilding @ http://127.0.0.1:3000/_next/static/chunks/node_modules_next_dist_client_20b209c9._.js:5693
+[   52194ms] [LOG] [home] Cleared old conversation data on mount @ http://127.0.0.1:3000/_next/static/chunks/_ad287314._.js:2228
+[   52195ms] [LOG] [home] No sandbox in URL, creating new sandbox automatically... @ http://127.0.0.1:3000/_next/static/chunks/_ad287314._.js:2247
+[   52196ms] [LOG] [createSandbox] Starting sandbox creation... @ http://127.0.0.1:3000/_next/static/chunks/_ad287314._.js:2588
+[   52243ms] [LOG] [home] Cleared old conversation data on mount @ http://127.0.0.1:3000/_next/static/chunks/_ad287314._.js:2228
+[   52503ms] [LOG] [generation] Auto-starting generation for URL: https://example.com @ http://127.0.0.1:3000/_next/static/chunks/_ad287314._.js:2326
+[   52504ms] [LOG] [createSandbox] Sandbox creation already in progress, skipping... @ http://127.0.0.1:3000/_next/static/chunks/_ad287314._.js:2584
+[   52862ms] [LOG] [Fast Refresh] done in 1314ms @ http://127.0.0.1:3000/_next/static/chunks/node_modules_next_dist_client_20b209c9._.js:5557
+[   53122ms] [LOG] [Fast Refresh] rebuilding @ http://127.0.0.1:3000/_next/static/chunks/node_modules_next_dist_client_20b209c9._.js:5693
+[   53205ms] [LOG] [Fast Refresh] done in 184ms @ http://127.0.0.1:3000/_next/static/chunks/node_modules_next_dist_client_20b209c9._.js:5557
+[   66072ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://example.com&size=128:0
+[   67870ms] [LOG] [Fast Refresh] rebuilding @ http://127.0.0.1:3000/_next/static/chunks/node_modules_next_dist_client_20b209c9._.js:5693
+[   68258ms] [LOG] [Fast Refresh] done in 489ms @ http://127.0.0.1:3000/_next/static/chunks/node_modules_next_dist_client_20b209c9._.js:5557
+[   76320ms] [LOG] [createSandbox] Response data: {success: true, sandboxId: sbx_lqk5JcQ2s6cOTu7ZAvHnzsH9SOpR, url: https://sb-1a69u2jr802s.vercel.run, provider: vercel, message: Sandbox created and Vite React app initialized} @ http://127.0.0.1:3000/_next/static/chunks/_ad287314._.js:2604
+[   76320ms] [LOG] [createSandbox] Setting sandboxData from creation: {success: true, sandboxId: sbx_lqk5JcQ2s6cOTu7ZAvHnzsH9SOpR, url: https://sb-1a69u2jr802s.vercel.run, provider: vercel, message: Sandbox created and Vite React app initialized} @ http://127.0.0.1:3000/_next/static/chunks/_ad287314._.js:2607
+[   76321ms] [LOG] [createSandbox] Sandbox ready with Vite server running @ http://127.0.0.1:3000/_next/static/chunks/_ad287314._.js:2636
+[  134008ms] [LOG] [Fast Refresh] rebuilding @ http://127.0.0.1:3000/_next/static/chunks/node_modules_next_dist_client_20b209c9._.js:5693
+[  134462ms] [ERROR] The final argument passed to %s changed size between renders. The order and size of this array must remain constant.
+
+Previous: %s
+Incoming: %s useEffect [false, https://example.com] [false, https://example.com, false, google/gemini-2.5-pro, google/gemini-2.5-pro] @ http://127.0.0.1:3000/_next/static/chunks/node_modules_next_dist_445d8acf._.js:2248
+[  134477ms] [ERROR] The final argument passed to %s changed size between renders. The order and size of this array must remain constant.
+
+Previous: %s
+Incoming: %s useEffect [false, https://example.com, false] [false, https://example.com, false, false, google/gemini-2.5-pro, google/gemini-2.5-pro] @ http://127.0.0.1:3000/_next/static/chunks/node_modules_next_dist_445d8acf._.js:2248
+[  134487ms] [LOG] [Fast Refresh] done in 527ms @ http://127.0.0.1:3000/_next/static/chunks/node_modules_next_dist_client_20b209c9._.js:5557
+[  134621ms] [LOG] [Fast Refresh] rebuilding @ http://127.0.0.1:3000/_next/static/chunks/node_modules_next_dist_client_20b209c9._.js:5693
+[  134671ms] [LOG] [Fast Refresh] done in 156ms @ http://127.0.0.1:3000/_next/static/chunks/node_modules_next_dist_client_20b209c9._.js:5557

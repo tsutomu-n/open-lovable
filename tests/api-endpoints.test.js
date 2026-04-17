@@ -14,6 +14,20 @@ test('gateway mode enables the curated model catalog', () => {
   assert.ok(catalog.models.every(model => model.enabled));
 });
 
+test('direct provider credentials take precedence over AI Gateway', () => {
+  const catalog = getAiModelCatalog({
+    AI_GATEWAY_API_KEY: 'gateway-key',
+    GEMINI_API_KEY: 'gemini-key',
+  });
+
+  assert.equal(catalog.mode, 'direct');
+  assert.equal(catalog.defaultModel, 'google/gemini-2.5-pro');
+  assert.equal(
+    catalog.models.find(model => model.id === 'openai/gpt-4.1')?.enabled,
+    false
+  );
+});
+
 test('direct mode picks the first available model when the preferred default is unavailable', () => {
   const catalog = getAiModelCatalog({
     OPENAI_API_KEY: 'openai-key',

@@ -5,6 +5,39 @@ import { SandboxProvider, SandboxInfo, CommandResult } from '../types';
 export class VercelProvider extends SandboxProvider {
   private existingFiles: Set<string> = new Set();
 
+  private getFriendlySandboxError(error: any): Error {
+    const response = error?.response;
+    const rawText = typeof error?.text === 'string' ? error.text : '';
+    const responseJson = error?.json;
+    const errorCode = responseJson?.error?.code;
+    const invalidToken = responseJson?.error?.invalidToken;
+    const message = responseJson?.error?.message;
+
+    if (response?.status === 403 && (invalidToken || errorCode === 'forbidden')) {
+      return new Error(
+        `Vercel sandbox authentication failed: ${message || 'Not authorized'}. Refresh VERCEL_OIDC_TOKEN or configure VERCEL_TOKEN + VERCEL_TEAM_ID + VERCEL_PROJECT_ID.`
+      );
+    }
+
+    if (response?.status === 401) {
+      return new Error(
+        `Vercel sandbox authentication failed: ${message || 'Unauthorized'}. Refresh VERCEL_OIDC_TOKEN or configure VERCEL_TOKEN + VERCEL_TEAM_ID + VERCEL_PROJECT_ID.`
+      );
+    }
+
+    if (message) {
+      return new Error(`Vercel sandbox creation failed: ${message}`);
+    }
+
+    if (rawText) {
+      return new Error(`Vercel sandbox creation failed: ${rawText}`);
+    }
+
+    return error instanceof Error
+      ? error
+      : new Error('Vercel sandbox creation failed');
+  }
+
   async createSandbox(): Promise<SandboxInfo> {
     try {
       
@@ -57,7 +90,7 @@ export class VercelProvider extends SandboxProvider {
 
     } catch (error) {
       console.error('[VercelProvider] Error creating sandbox:', error);
-      throw error;
+      throw this.getFriendlySandboxError(error);
     }
   }
 

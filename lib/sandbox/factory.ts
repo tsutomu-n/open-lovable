@@ -36,7 +36,8 @@ export class SandboxFactory {
       );
     }
 
-    if (configuredProvider && !this.isProviderAvailable(configuredProvider)) {
+    const knownProviders = this.getAvailableProviders();
+    if (configuredProvider && knownProviders.includes(configuredProvider.toLowerCase()) && !this.isProviderAvailable(configuredProvider)) {
       throw new Error(
         `Sandbox provider "${configuredProvider}" is configured but not ready. ${this.getProviderSetupHint(configuredProvider)}`
       );

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { streamText } from 'ai';
+import { generateObject, streamText } from 'ai';
 import type { SandboxState } from '@/types/sandbox';
 import { selectFilesForEdit, getFileContents, formatFilesForAI } from '@/lib/context-selector';
 import { executeSearchPlan, formatSearchResultsForAI, selectTargetFile } from '@/lib/file-search-executor';
@@ -7,7 +7,10 @@ import { FileManifest } from '@/types/file-manifest';
 import type { ConversationState, ConversationMessage, ConversationEdit } from '@/types/conversation';
 import { appConfig } from '@/config/app.config';
 import { getAiModelCatalog, resolveRuntimeModel } from '@/lib/ai/model-runtime';
-import { resolveLanguageModel } from '@/lib/ai/provider-manager';
+import { resolveLanguageModel, resolveLanguageModelWithOptions } from '@/lib/ai/provider-manager';
+import { formatCloneBriefForPrompt, type CloneBrief } from '@/lib/scrape/clone-brief';
+import { assessCloneFidelity } from '@/lib/scrape/clone-quality';
+import { z } from 'zod';
 
 // Force dynamic route to enable streaming
 export const dynamic = 'force-dynamic';
@@ -59,6 +62,47 @@ function analyzeUserPreferences(messages: ConversationMessage[]): {
   };
 }
 
+function isGatewayBillingError(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error);
+  return (
+    message.includes('valid credit card on file') ||
+    message.includes('customer_verification_required')
+  );
+}
+
+const cloneQualitySchema = z.object({
+  needsCorrection: z.boolean(),
+  summary: z.string(),
+  targetFiles: z.array(z.string()).max(4).default([]),
+  correctionPrompt: z.string().default(''),
+});
+
+function extractGeneratedFiles(generatedCode: string): Array<{ path: string; content: string }> {
+  const files: Array<{ path: string; content: string }> = [];
+  const fileRegex = /<file path="([^"]+)">([\s\S]*?)<\/file>/g;
+  let match: RegExpExecArray | null;
+
+  while ((match = fileRegex.exec(generatedCode)) !== null) {
+    files.push({ path: match[1], content: match[2].trim() });
+  }
+
+  return files;
+}
+
+function upsertGeneratedFile(generatedCode: string, filePath: string, content: string): string {
+  const cleanContent = content.trim();
+  const filePattern = new RegExp(
+    `<file path="${filePath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}">[\\s\\S]*?<\\/file>`,
+    'g'
+  );
+
+  if (filePattern.test(generatedCode)) {
+    return generatedCode.replace(filePattern, `<file path="${filePath}">\n${cleanContent}\n</file>`);
+  }
+
+  return `${generatedCode.trim()}\n<file path="${filePath}">\n${cleanContent}\n</file>\n`;
+}
+
 declare global {
   var sandboxState: SandboxState;
   var conversationState: ConversationState | null;
@@ -99,6 +143,11 @@ export async function POST(request: NextRequest) {
     }
 
     const model = runtimeModel.canonicalModel;
+    const cloneInput = context?.cloneInput as {
+      cloneBrief?: CloneBrief;
+      screenshotUrl?: string | null;
+      sourceUrl?: string;
+    } | undefined;
     
     // Initialize conversation state if not exists
     if (!global.conversationState) {
@@ -1225,6 +1274,14 @@ MORPH FAST APPLY MODE (EDIT-ONLY):
         console.log(`[generate-ai-code-stream] Model string: ${model}`);
 
         // Make streaming API call with appropriate provider
+        const userMessageContent =
+          cloneInput?.cloneBrief && cloneInput?.screenshotUrl && !isEdit && !isKimiGroq
+            ? [
+                { type: 'text' as const, text: fullPrompt },
+                { type: 'image' as const, image: cloneInput.screenshotUrl },
+              ]
+            : fullPrompt;
+
         const streamOptions: any = {
           model: resolvedModel.model,
           messages: [
@@ -1268,7 +1325,7 @@ REMEMBER: It's better to generate fewer COMPLETE files than many INCOMPLETE file
             },
             { 
               role: 'user', 
-              content: fullPrompt + `
+              content: userMessageContent === fullPrompt ? fullPrompt + `
 
 CRITICAL: You MUST complete EVERY file you start. If you write:
 <file path="src/components/Hero.jsx">
@@ -1285,6 +1342,25 @@ ALWAYS write complete code:
 
 If you're running out of space, generate FEWER files but make them COMPLETE.
 It's better to have 3 complete files than 10 incomplete files.`
+                : [
+                    ...userMessageContent,
+                    {
+                      type: 'text' as const,
+                      text: `
+
+Visual reference note:
+- Use the attached screenshot to match layout density, header placement, spacing, section rhythm, and CTA prominence.
+- Use the clone brief and scraped content as the source of truth for text, links, and section order.
+
+CRITICAL: You MUST complete EVERY file you start. If you write:
+<file path="src/components/Hero.jsx">
+
+You MUST include the closing </file> tag and ALL the code in between.
+
+If you're running out of space, generate FEWER files but make them COMPLETE.
+It's better to have 3 complete files than 10 incomplete files.`,
+                    },
+                  ]
             }
           ],
           maxTokens: 8192, // Reduce to ensure completion
@@ -1298,6 +1374,7 @@ It's better to have 3 complete files than 10 incomplete files.`
         let result;
         let retryCount = 0;
         const maxRetries = 2;
+        let directGatewayFallbackAttempted = false;
         
         while (retryCount <= maxRetries) {
           try {
@@ -1305,6 +1382,22 @@ It's better to have 3 complete files than 10 incomplete files.`
             break; // Success, exit retry loop
           } catch (streamError: any) {
             console.error(`[generate-ai-code-stream] Error calling streamText (attempt ${retryCount + 1}/${maxRetries + 1}):`, streamError);
+
+            if (resolvedModel.viaGateway && !directGatewayFallbackAttempted && isGatewayBillingError(streamError)) {
+              try {
+                const directModel = resolveLanguageModelWithOptions(model, { preferDirect: true });
+                directGatewayFallbackAttempted = true;
+                streamOptions.model = directModel.model;
+                actualModel = directModel.actualModel;
+                await sendProgress({
+                  type: 'info',
+                  message: 'AI Gateway is unavailable for this account. Retrying with the direct provider key.'
+                });
+                continue;
+              } catch (fallbackError) {
+                console.error('[generate-ai-code-stream] Direct provider fallback failed:', fallbackError);
+              }
+            }
             
             // Check if this is a Groq service unavailable error
             const isGroqServiceError = isKimiGroq && streamError.message?.includes('Service unavailable');
@@ -1544,9 +1637,9 @@ It's better to have 3 complete files than 10 incomplete files.`
         }
         
         // Parse files and send progress for each
-        const fileRegex = /<file path="([^"]+)">([\s\S]*?)<\/file>/g;
-        const files = [];
+        let files = [];
         let match;
+        const fileRegex = /<file path="([^"]+)">([\s\S]*?)<\/file>/g;
         
         while ((match = fileRegex.exec(generatedCode)) !== null) {
           const filePath = match[1];
@@ -1760,6 +1853,108 @@ Provide the complete file content without any truncation. Include all necessary 
               type: 'info',
               message: 'Truncation recovery complete'
             });
+          }
+        }
+
+        if (cloneInput?.cloneBrief && !isEdit) {
+          try {
+            const deterministicAssessment = assessCloneFidelity(cloneInput.cloneBrief, files);
+            const reviewModel = resolveLanguageModel(model);
+            const cloneReview = await generateObject({
+              model: reviewModel.model,
+              schema: cloneQualitySchema,
+              messages: [
+                {
+                  role: 'system',
+                  content: `You are reviewing a generated React website clone for visual and structural fidelity.
+
+Only request corrections for significant gaps:
+- missing or oversimplified hero
+- missing navigation labels or major footer groups
+- too much compression for information-dense sites
+- replaced real source links with placeholders
+
+Prefer editing existing files. Only target files that materially improve fidelity.`,
+                },
+                {
+                  role: 'user',
+                  content: `CLONE BRIEF:
+${formatCloneBriefForPrompt(cloneInput.cloneBrief)}
+
+GENERATED FILES:
+${generatedCode}
+
+Deterministic issues already detected:
+${deterministicAssessment.issues.length > 0 ? deterministicAssessment.issues.map(issue => `- ${issue}`).join('\n') : '- none'}
+
+Return whether one correction pass is needed.`,
+                },
+              ],
+            });
+
+            const combinedTargetFiles = Array.from(
+              new Set([
+                ...deterministicAssessment.targetFiles,
+                ...cloneReview.object.targetFiles,
+              ])
+            ).slice(0, 4);
+
+            const combinedCorrectionPrompt = [
+              deterministicAssessment.correctionPrompt,
+              cloneReview.object.correctionPrompt,
+            ].filter(Boolean).join('\n');
+
+            const shouldCorrect =
+              deterministicAssessment.issues.length > 0 ||
+              cloneReview.object.needsCorrection;
+
+            if (shouldCorrect && combinedTargetFiles.length > 0 && combinedCorrectionPrompt.trim()) {
+              await sendProgress({
+                type: 'info',
+                message: `Improving clone fidelity: ${cloneReview.object.summary || deterministicAssessment.issues[0] || 'detected structural gaps'}`,
+              });
+
+              const correctionModel = resolveLanguageModel(model);
+              const correctionResult = await streamText({
+                model: correctionModel.model,
+                temperature: appConfig.ai.defaultTemperature,
+                messages: [
+                  {
+                    role: 'system',
+                    content: `You are correcting a generated React website clone.
+
+Output ONLY full <file path="...">...</file> blocks for these files:
+${combinedTargetFiles.join('\n')}
+
+Do not output explanations. Preserve all other files unchanged.`,
+                  },
+                  {
+                    role: 'user',
+                    content: `CLONE BRIEF:
+${formatCloneBriefForPrompt(cloneInput.cloneBrief)}
+
+CURRENT GENERATED FILES:
+${generatedCode}
+
+CORRECTION REQUEST:
+${combinedCorrectionPrompt}`,
+                  },
+                ],
+              });
+
+              let correctionCode = '';
+              for await (const chunk of correctionResult.textStream) {
+                correctionCode += chunk;
+              }
+
+              for (const correctedFile of extractGeneratedFiles(correctionCode)) {
+                generatedCode = upsertGeneratedFile(generatedCode, correctedFile.path, correctedFile.content);
+              }
+
+              files = extractGeneratedFiles(generatedCode);
+            }
+          } catch (cloneReviewError) {
+            console.error('[generate-ai-code-stream] Clone quality review failed:', cloneReviewError);
           }
         }
         

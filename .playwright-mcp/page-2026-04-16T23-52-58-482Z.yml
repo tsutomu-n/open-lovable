@@ -1,0 +1,45 @@
+- generic [active] [ref=e1]:
+  - button "Open Next.js Dev Tools" [ref=e94] [cursor=pointer]:
+    - img [ref=e95]
+  - alert [ref=e98]
+  - generic [ref=e104]:
+    - generic [ref=e105]:
+      - link [ref=e107] [cursor=pointer]:
+        - /url: /
+        - img [ref=e108]
+        - img [ref=e114]
+      - generic [ref=e124]:
+        - combobox [ref=e125]:
+          - option "Gemini 2.5 Pro" [selected]
+          - option "GPT-4.1"
+          - option "Claude 4 Sonnet"
+          - option "Kimi K2"
+        - button "Create new sandbox" [ref=e126] [cursor=pointer]:
+          - img [ref=e127]
+        - button "Re-apply last generation" [disabled] [ref=e129]:
+          - img [ref=e130]
+        - button "Download your Vite app as ZIP" [disabled] [ref=e132]:
+          - img [ref=e133]
+    - generic [ref=e135]:
+      - generic [ref=e136]:
+        - generic [ref=e141]: Starting to clone example.com...
+        - generic [ref=e144]:
+          - generic [ref=e145]:
+            - img [ref=e147]
+            - textbox [ref=e151]:
+              - /placeholder: Describe what you want to build...
+          - button [disabled] [ref=e153]:
+            - img [ref=e155]
+      - generic [ref=e157]:
+        - generic [ref=e160]:
+          - button "Code" [ref=e161] [cursor=pointer]:
+            - generic [ref=e162]:
+              - img [ref=e163]
+              - generic [ref=e165]: Code
+          - button "View" [ref=e166] [cursor=pointer]:
+            - generic [ref=e167]:
+              - img [ref=e168]
+              - generic [ref=e171]: View
+        - generic [ref=e175]:
+          - paragraph [ref=e180]: Analyzing website...
+          - paragraph [ref=e181]: Taking a screenshot of the site

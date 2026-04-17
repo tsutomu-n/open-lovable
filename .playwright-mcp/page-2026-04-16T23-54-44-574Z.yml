@@ -1,0 +1,63 @@
+- generic [ref=e2]:
+  - generic [ref=e3]:
+    - generic:
+      - img
+      - img
+    - generic [ref=e6]:
+      - link [ref=e9] [cursor=pointer]:
+        - /url: /
+        - img [ref=e10]
+        - img [ref=e16]
+      - link "Use this Template" [ref=e27] [cursor=pointer]:
+        - /url: https://github.com/mendableai/open-lovable
+        - button "Use this Template" [ref=e28]:
+          - img [ref=e29]
+          - text: Use this Template
+  - generic [ref=e31]:
+    - generic [ref=e32]:
+      - generic:
+        - img
+        - img
+      - generic [ref=e33]:
+        - link "Website Builder" [ref=e34] [cursor=pointer]:
+          - /url: "#"
+          - generic [ref=e35]: Website Builder
+          - img [ref=e38]
+        - heading "Open Lovable v3" [level=1] [ref=e40]
+        - paragraph [ref=e41]: Clone brand format or re-imagine any website, in seconds.
+        - link "Powered by Firecrawl." [ref=e42] [cursor=pointer]:
+          - /url: "#"
+    - generic [ref=e43]:
+      - img
+      - img
+      - img
+      - img
+      - generic [ref=e47]:
+        - generic [ref=e48]:
+          - generic [ref=e49]:
+            - img [ref=e50]
+            - textbox "Enter URL or search term..." [ref=e53]
+            - button [ref=e55] [cursor=pointer]:
+              - img [ref=e61]
+          - generic [ref=e64]:
+            - generic [ref=e66] [cursor=pointer]:
+              - generic [ref=e69]: Extend brand styles
+              - button [ref=e71]
+            - generic [ref=e75]:
+              - button "Glassmorphism" [ref=e76] [cursor=pointer]:
+                - generic [ref=e77]: Glassmorphism
+              - button "Neumorphism" [ref=e78] [cursor=pointer]
+              - button "Brutalism" [ref=e79] [cursor=pointer]
+              - button "Minimalist" [ref=e80] [cursor=pointer]
+              - button "Dark Mode" [ref=e81] [cursor=pointer]
+              - button "Gradient Rich" [ref=e82] [cursor=pointer]
+              - button "3D Depth" [ref=e83] [cursor=pointer]
+              - button "Retro Wave" [ref=e84] [cursor=pointer]
+            - generic [ref=e85]:
+              - combobox [disabled] [ref=e86]:
+                - option "Loading AI models..." [selected]
+              - paragraph [ref=e87]: Set AI_GATEWAY_API_KEY or one provider API key to enable generation.
+              - textbox "Additional instructions (optional)" [ref=e88]
+        - generic:
+          - generic:
+            - generic: "'_^_ ,^_' '.\"\"\"+=\"\"=+\"\"^-'' ''..:::,_::::::_,:::..'' ''.-_\"::___:^^\"___::\":-.''' '.'-_:::\"+^\"\"\"+^:::_-'.'"

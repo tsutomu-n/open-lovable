@@ -1,0 +1,25 @@
+[   13528ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://127.0.0.1:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1f56dc06._.js:14475
+[   14881ms] [LOG] [Fast Refresh] done in NaNms @ http://127.0.0.1:3000/_next/static/chunks/node_modules_next_dist_client_20b209c9._.js:5557
+[   33297ms] [LOG] [Fast Refresh] rebuilding @ http://127.0.0.1:3000/_next/static/chunks/node_modules_next_dist_client_20b209c9._.js:5693
+[   36526ms] [LOG] [Fast Refresh] done in 3329ms @ http://127.0.0.1:3000/_next/static/chunks/node_modules_next_dist_client_20b209c9._.js:5557
+[   36669ms] [LOG] [Fast Refresh] rebuilding @ http://127.0.0.1:3000/_next/static/chunks/node_modules_next_dist_client_20b209c9._.js:5693
+[   37062ms] [LOG] [Fast Refresh] done in 526ms @ http://127.0.0.1:3000/_next/static/chunks/node_modules_next_dist_client_20b209c9._.js:5557
+[   37320ms] [WARNING] Detected `scroll-behavior: smooth` on the `<html>` element. In a future version, Next.js will no longer automatically disable smooth scrolling during route transitions. To prepare for this change, add `data-scroll-behavior="smooth"` to your <html> element. Learn more: https://nextjs.org/docs/messages/missing-data-scroll-behavior @ http://127.0.0.1:3000/_next/static/chunks/node_modules_next_dist_445d8acf._.js:874
+[   37629ms] [LOG] [Fast Refresh] rebuilding @ http://127.0.0.1:3000/_next/static/chunks/node_modules_next_dist_client_20b209c9._.js:5693
+[   38570ms] [LOG] [home] Cleared old conversation data on mount @ http://127.0.0.1:3000/_next/static/chunks/_ad287314._.js:2228
+[   38582ms] [LOG] [home] Cleared old conversation data on mount @ http://127.0.0.1:3000/_next/static/chunks/_ad287314._.js:2228
+[   38582ms] [LOG] [home] No sandbox in URL, creating new sandbox automatically... @ http://127.0.0.1:3000/_next/static/chunks/_ad287314._.js:2247
+[   38584ms] [LOG] [createSandbox] Starting sandbox creation... @ http://127.0.0.1:3000/_next/static/chunks/_ad287314._.js:2603
+[   38833ms] [LOG] [generation] Auto-starting generation for URL: https://example.com @ http://127.0.0.1:3000/_next/static/chunks/_ad287314._.js:2329
+[   38837ms] [LOG] [createSandbox] Sandbox creation already in progress, skipping... @ http://127.0.0.1:3000/_next/static/chunks/_ad287314._.js:2599
+[   40674ms] [LOG] [Fast Refresh] done in 3148ms @ http://127.0.0.1:3000/_next/static/chunks/node_modules_next_dist_client_20b209c9._.js:5557
+[   52504ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://example.com&size=128:0
+[   52532ms] [LOG] [Fast Refresh] rebuilding @ http://127.0.0.1:3000/_next/static/chunks/node_modules_next_dist_client_20b209c9._.js:5693
+[   53527ms] [LOG] [Fast Refresh] done in 1095ms @ http://127.0.0.1:3000/_next/static/chunks/node_modules_next_dist_client_20b209c9._.js:5557
+[   63469ms] [LOG] [Fast Refresh] rebuilding @ http://127.0.0.1:3000/_next/static/chunks/node_modules_next_dist_client_20b209c9._.js:5693
+[   63672ms] [LOG] [Fast Refresh] done in 304ms @ http://127.0.0.1:3000/_next/static/chunks/node_modules_next_dist_client_20b209c9._.js:5557
+[   67067ms] [LOG] [createSandbox] Response data: {success: true, sandboxId: sbx_lYdG1Ny1OUErgM6OUFvUKKZ1y2rd, url: https://sb-67l6o4sydy0r.vercel.run, provider: vercel, message: Sandbox created and Vite React app initialized} @ http://127.0.0.1:3000/_next/static/chunks/_ad287314._.js:2619
+[   67068ms] [LOG] [createSandbox] Setting sandboxData from creation: {success: true, sandboxId: sbx_lYdG1Ny1OUErgM6OUFvUKKZ1y2rd, url: https://sb-67l6o4sydy0r.vercel.run, provider: vercel, message: Sandbox created and Vite React app initialized} @ http://127.0.0.1:3000/_next/static/chunks/_ad287314._.js:2622
+[   67070ms] [LOG] [createSandbox] Sandbox ready with Vite server running @ http://127.0.0.1:3000/_next/static/chunks/_ad287314._.js:2651
+[  105239ms] [LOG] [Fast Refresh] rebuilding @ http://127.0.0.1:3000/_next/static/chunks/node_modules_next_dist_client_20b209c9._.js:5693
+[  105693ms] [LOG] [Fast Refresh] done in 554ms @ http://127.0.0.1:3000/_next/static/chunks/node_modules_next_dist_client_20b209c9._.js:5557

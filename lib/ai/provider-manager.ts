@@ -98,7 +98,17 @@ function getOrCreateClient(
 }
 
 export function resolveLanguageModel(modelId: string): ModelResolution {
-  const runtimeModel = resolveRuntimeModel(modelId);
+  return resolveLanguageModelWithOptions(modelId);
+}
+
+export function resolveLanguageModelWithOptions(
+  modelId: string,
+  options?: { preferDirect?: boolean }
+): ModelResolution {
+  const env = options?.preferDirect
+    ? { ...process.env, AI_GATEWAY_API_KEY: undefined }
+    : process.env;
+  const runtimeModel = resolveRuntimeModel(modelId, env);
 
   if (!runtimeModel.enabled || !runtimeModel.canonicalModel || !runtimeModel.actualModel || !runtimeModel.provider) {
     throw new Error(runtimeModel.disabledReason || 'Unknown AI model');
