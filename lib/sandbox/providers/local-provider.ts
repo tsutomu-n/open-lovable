@@ -139,8 +139,6 @@ export class LocalProvider extends SandboxProvider {
     if (!processToStop || processToStop.exitCode !== null || processToStop.killed) {
       return;
     }
-      return;
-    }
 
     await new Promise<void>((resolve) => {
       let settled = false;
