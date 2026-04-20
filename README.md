@@ -18,7 +18,7 @@ Built by the [Firecrawl](https://firecrawl.dev/?ref=open-lovable-github) team. I
 - Next.js 15 + React 19
 - Firecrawl for search, scraping, screenshots, and brand extraction
 - AI SDK model routing through Vercel AI Gateway or direct provider keys
-- E2B or Vercel Sandbox for code execution
+- E2B, Vercel, or local sandbox for code execution
 - Optional Morph fast apply for edit mode
 
 ## Quick Start
@@ -54,6 +54,7 @@ You also need one sandbox provider:
 
 - `E2B_API_KEY` for E2B, or
 - `VERCEL_OIDC_TOKEN`, or `VERCEL_TOKEN` + `VERCEL_TEAM_ID` + `VERCEL_PROJECT_ID` for Vercel Sandbox
+- no additional credentials for the built-in local sandbox
 
 Optional:
 
@@ -63,6 +64,7 @@ Direct provider keys take precedence over `AI_GATEWAY_API_KEY`. If `SANDBOX_PROV
 
 1. `e2b`
 2. `vercel`
+3. `local`
 
 ### 4. Run the app
 
@@ -105,6 +107,9 @@ E2B_API_KEY=your_e2b_api_key
 # VERCEL_PROJECT_ID=your_project_id
 # VERCEL_TOKEN=your_access_token
 
+# Or use the built-in local sandbox
+# SANDBOX_PROVIDER=local
+
 # =================================================================
 # OPTIONAL - FAST APPLY DURING EDITS
 # =================================================================
@@ -128,6 +133,14 @@ Expected behavior:
 - the home page auto-selects `Gemini 2.5 Pro`
 - entering a URL transitions to `/generation`
 - sandbox creation, scraping, and generation start without extra setup
+
+If you do not want any external sandbox dependency, this also works:
+
+```env
+FIRECRAWL_API_KEY=your_firecrawl_api_key
+GEMINI_API_KEY=your_gemini_api_key
+SANDBOX_PROVIDER=local
+```
 
 ## Usage
 
@@ -187,7 +200,7 @@ pnpm test:all
 
 - Search, scraping, and brand extraction all depend on Firecrawl, so `FIRECRAWL_API_KEY` is required even if the rest of your stack is configured correctly.
 - Generation is disabled until at least one AI model is available.
-- Sandbox creation fails fast when the selected provider is configured but missing the credentials that provider requires.
+- If Vercel or E2B is unavailable, the app can fall back to the built-in local sandbox.
 
 ## License
 

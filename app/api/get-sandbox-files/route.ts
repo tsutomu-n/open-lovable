@@ -24,7 +24,7 @@ export async function GET() {
     console.log('[get-sandbox-files] Fetching and analyzing file structure...');
 
     if (provider) {
-      const fileList = (await provider.listFiles()).filter(filePath =>
+      const fileList = (await provider.listFiles()).filter((filePath: string) =>
         filePath.match(/\.(jsx?|tsx?|css|json)$/) &&
         !filePath.includes('node_modules/') &&
         !filePath.includes('.git/') &&

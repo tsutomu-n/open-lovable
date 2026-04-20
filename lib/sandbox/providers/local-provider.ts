@@ -136,7 +136,9 @@ export class LocalProvider extends SandboxProvider {
     const processToStop = this.viteProcess;
     this.viteProcess = null;
 
-    if (processToStop.exitCode !== null || processToStop.killed) {
+    if (!processToStop || processToStop.exitCode !== null || processToStop.killed) {
+      return;
+    }
       return;
     }
 
