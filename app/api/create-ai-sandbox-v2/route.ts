@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { SandboxFactory } from '@/lib/sandbox/factory';
+import { LocalProvider } from '@/lib/sandbox/providers/local-provider';
 // SandboxProvider type is used through SandboxFactory
 import type { SandboxState } from '@/types/sandbox';
 import { sandboxManager } from '@/lib/sandbox/sandbox-manager';
@@ -37,9 +38,21 @@ export async function POST() {
       global.existingFiles = new Set<string>();
     }
 
-    // Create new sandbox using factory
-    const provider = SandboxFactory.create();
-    const sandboxInfo = await provider.createSandbox();
+    // Create new sandbox using factory, falling back to local when external auth is unavailable.
+    let provider = SandboxFactory.create();
+    let sandboxInfo;
+
+    try {
+      sandboxInfo = await provider.createSandbox();
+    } catch (error) {
+      if (!(provider instanceof LocalProvider)) {
+        console.warn('[create-ai-sandbox-v2] Primary provider failed, falling back to local sandbox:', error);
+        provider = new LocalProvider({});
+        sandboxInfo = await provider.createSandbox();
+      } else {
+        throw error;
+      }
+    }
     
     console.log('[create-ai-sandbox-v2] Setting up Vite React app...');
     await provider.setupViteApp();
